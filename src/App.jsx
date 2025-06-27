@@ -93,7 +93,7 @@ const Header = () => {
         <header className="bg-white/80 dark:bg-black/80 backdrop-blur-sm sticky top-0 z-30 border-b border-gray-200 dark:border-gray-800">
             <nav className="container mx-auto px-6 py-3 flex justify-between items-center">
                 <div className="flex items-center gap-6">
-                    <a href="#" className="font-bold text-lg text-black dark:text-white">▲ CRWN</a>
+                    <a href="#" className="font-bold text-lg text-black dark:text-white">▲ CRWN3</a>
                     <div className="hidden md:flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
                         <a href="#" className="hover:text-black dark:hover:text-white transition-colors">Shop</a>
                         <a href="#" className="hover:text-black dark:hover:text-white transition-colors">About</a>
