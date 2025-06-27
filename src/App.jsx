@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, createContext, useContext, useRef } from 'react';
 import { Products } from './data/products';
 
-// --- ICONS (Vercel-style) ---
+// --- ICONS ---
 const SunIcon = () => <svg height="20" width="20" stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>;
 const MoonIcon = () => <svg height="20" width="20" stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>;
 const WishlistIcon = ({ className }) => <svg className={className} stroke="currentColor" fill={className.includes('text-red-500') || className.includes('fill-red-500') ? 'currentColor' : 'none'} strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.5l1.318-1.182a4.5 4.5 0 116.364 6.364L12 20.25l-7.682-7.682a4.5 4.5 0 010-6.364z"></path></svg>;
@@ -11,6 +11,7 @@ const MenuIcon = () => <svg className="w-6 h-6" fill="none" stroke="currentColor
 const CloseIcon = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>;
 const TrashIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>;
 const StarIcon = ({ className }) => <svg className={className} fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>;
+const ArrowRightIcon = () => <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>;
 
 const ALL_PRODUCTS = Products.map(p => ({ ...p, availableSizes: ["S", "M", "L", "XL"], availableColors: ["#808080", "#000000", "#FFFFFF", "#ff0000"], gallery: p.gallery?.length > 0 ? p.gallery : [p.imageUrl, 'https://placehold.co/400x600/cccccc/ffffff?text=View+2', 'https://placehold.co/400x600/999999/ffffff?text=View+3', 'https://placehold.co/400x600/666666/ffffff?text=View+4', 'https://placehold.co/400x600/333333/ffffff?text=View+5'] }));
 
@@ -30,8 +31,8 @@ const AppProvider = ({ children }) => {
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isWishlistOpen, setIsWishlistOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [activePage, setActivePage] = useState('home'); // 'home' or 'shop'
 
-    // Load state from localStorage on initial render
     useEffect(() => {
         const storedTheme = localStorage.getItem('theme') || 'light';
         setTheme(storedTheme);
@@ -45,7 +46,6 @@ const AppProvider = ({ children }) => {
             if (storedWishlist) setWishlist(JSON.parse(storedWishlist));
         } catch (error) {
             console.error("Failed to parse from localStorage", error);
-            // In case of error, clear corrupted data
             localStorage.removeItem('cart');
             localStorage.removeItem('wishlist');
         }
@@ -53,7 +53,6 @@ const AppProvider = ({ children }) => {
         setTimeout(() => setIsLoading(false), 800);
     }, []);
     
-    // Persist state to localStorage whenever it changes
     useEffect(() => { localStorage.setItem('theme', theme); document.documentElement.className = theme; }, [theme]);
     useEffect(() => { localStorage.setItem('cart', JSON.stringify(cart)); }, [cart]);
     useEffect(() => { localStorage.setItem('wishlist', JSON.stringify(wishlist)); }, [wishlist]);
@@ -105,7 +104,12 @@ const AppProvider = ({ children }) => {
         setCurrentPage(1);
     }, [category, sortBy, searchTerm]);
 
-    const value = { theme, setTheme, cart, addToCart, removeFromCart, updateCartQuantity, wishlist, toggleWishlist, searchTerm, setSearchTerm, sortBy, setSortBy, category, setCategory, isLoading, modalProduct, setModalProduct, toasts, showToast, isCartOpen, setIsCartOpen, isWishlistOpen, setIsWishlistOpen, currentPage, setCurrentPage, ALL_PRODUCTS };
+    const navigate = (page) => {
+      setActivePage(page);
+      window.scrollTo(0, 0);
+    }
+
+    const value = { theme, setTheme, cart, addToCart, removeFromCart, updateCartQuantity, wishlist, toggleWishlist, searchTerm, setSearchTerm, sortBy, setSortBy, category, setCategory, isLoading, modalProduct, setModalProduct, toasts, showToast, isCartOpen, setIsCartOpen, isWishlistOpen, setIsWishlistOpen, currentPage, setCurrentPage, ALL_PRODUCTS, activePage, navigate };
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
@@ -117,7 +121,7 @@ const ToastContainer = () => {
 };
 
 const Header = () => {
-    const { theme, setTheme, cart, wishlist, setSearchTerm, setIsCartOpen, setIsWishlistOpen } = useContext(AppContext);
+    const { theme, setTheme, cart, wishlist, setSearchTerm, setIsCartOpen, setIsWishlistOpen, navigate, activePage } = useContext(AppContext);
     const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -128,12 +132,18 @@ const Header = () => {
             document.body.style.overflow = 'unset';
         }
     }, [isMenuOpen]);
+    
+    const handleNav = (e, page) => {
+        e.preventDefault();
+        navigate(page);
+        setIsMenuOpen(false);
+    }
 
     const MobileMenu = () => (
         <div className={`fixed inset-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-lg transition-opacity md:hidden ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
             <div className="container mx-auto px-4 sm:px-6 py-3 flex flex-col h-full">
                 <div className="flex justify-between items-center mb-8">
-                    <a href="#" className="font-bold text-lg text-black dark:text-white">▲ CRWN3</a>
+                    <a href="#" onClick={(e) => handleNav(e, 'home')} className="font-bold text-lg text-black dark:text-white">▲ CRWN3</a>
                     <button onClick={() => setIsMenuOpen(false)} className="p-2 -mr-2"><CloseIcon /></button>
                 </div>
                 <div className="relative mb-8">
@@ -141,9 +151,9 @@ const Header = () => {
                     <div className="absolute top-0 left-0 flex items-center h-full pl-3 pointer-events-none text-gray-400"><SearchIcon /></div>
                 </div>
                 <nav className="flex flex-col items-center gap-6 text-lg text-gray-500 dark:text-gray-400">
-                    <a href="#" onClick={() => setIsMenuOpen(false)} className="hover:text-black dark:hover:text-white transition-colors">Shop</a>
-                    <a href="#" onClick={() => setIsMenuOpen(false)} className="hover:text-black dark:hover:text-white transition-colors">About</a>
-                    <a href="#" onClick={() => setIsMenuOpen(false)} className="hover:text-black dark:hover:text-white transition-colors">Contact</a>
+                    <a href="#" onClick={(e) => handleNav(e, 'shop')} className="hover:text-black dark:hover:text-white transition-colors">Shop</a>
+                    <a href="#" onClick={(e) => handleNav(e, 'about')} className="hover:text-black dark:hover:text-white transition-colors">About</a>
+                    <a href="#" onClick={(e) => handleNav(e, 'contact')} className="hover:text-black dark:hover:text-white transition-colors">Contact</a>
                 </nav>
             </div>
         </div>
@@ -154,16 +164,16 @@ const Header = () => {
             <header className="bg-white/80 dark:bg-black/80 backdrop-blur-sm sticky top-0 z-30 border-b border-gray-200/80 dark:border-gray-800/80">
                 <nav className="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
                     <div className="flex items-center gap-6">
-                        <a href="#" className="font-bold text-lg text-black dark:text-white transition-transform hover:scale-105">▲ CRWN3</a>
+                        <a href="#" onClick={(e) => handleNav(e, 'home')} className="font-bold text-lg text-black dark:text-white transition-transform hover:scale-105">▲ CRWN3</a>
                         <div className="hidden md:flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
-                            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">Shop</a>
+                            <a href="#" onClick={(e) => handleNav(e, 'shop')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'shop' ? 'text-black dark:text-white' : ''}`}>Shop</a>
                             <a href="#" className="hover:text-black dark:hover:text-white transition-colors">About</a>
                             <a href="#" className="hover:text-black dark:hover:text-white transition-colors">Contact</a>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="relative flex-grow max-w-xs hidden sm:block">
-                           <input type="text" onChange={e => setSearchTerm(e.target.value)} placeholder="Search..." className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 transition-all"/>
+                           <input type="text" onChange={e => { setSearchTerm(e.target.value); navigate('shop'); }} placeholder="Search..." className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 transition-all"/>
                             <div className="absolute top-0 left-0 flex items-center h-full pl-3 pointer-events-none text-gray-400"><SearchIcon /></div>
                         </div>
                         <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors"><span className="transition-transform duration-500 inline-block rotate-0 dark:rotate-180">{theme === 'light' ? <MoonIcon /> : <SunIcon />}</span></button>
@@ -392,7 +402,7 @@ const WishlistSidebar = () => {
 };
 
 
-// --- MAIN APP & LAYOUT ---
+// --- PAGE COMPONENTS ---
 const FilterControls = () => {
     const { category, setCategory, sortBy, setSortBy } = useContext(AppContext);
     const categories = ["all", "hats", "sneakers", "jackets", "womens", "mens"];
@@ -409,7 +419,6 @@ const FilterControls = () => {
             gliderRef.current.style.left = `${activeTab.offsetLeft}px`;
         }
     }, [category, categories]);
-
 
     return (
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
@@ -495,22 +504,7 @@ const Pagination = ({ totalItems, itemsPerPage, currentPage, onPageChange }) => 
   );
 };
 
-
-const Background = () => (
-    <div className="absolute inset-0 -z-50 h-full w-full bg-white dark:bg-black">
-        <svg className="absolute inset-0 h-full w-full" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <pattern id="grid-light" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#e5e7eb" strokeWidth="0.5"/></pattern>
-                <pattern id="grid-dark" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#1f2937" strokeWidth="0.5"/></pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid-light)" className="dark:hidden" />
-            <rect width="100%" height="100%" fill="url(#grid-dark)" className="hidden dark:block" />
-        </svg>
-    </div>
-);
-
-
-const MainContent = () => {
+const ShopPage = () => {
     const { isLoading, searchTerm, sortBy, category, currentPage, setCurrentPage } = useContext(AppContext);
     const ITEMS_PER_PAGE = 20;
 
@@ -563,6 +557,177 @@ const MainContent = () => {
     );
 };
 
+const HomePage = () => {
+  const { navigate, ALL_PRODUCTS, setCategory } = useContext(AppContext);
+  const featuredProducts = useMemo(() => ALL_PRODUCTS.filter(p => p.reviews.length > 1).slice(0, 4), [ALL_PRODUCTS]);
+  const newArrivals = useMemo(() => [...ALL_PRODUCTS].sort((a,b) => b.id - a.id).slice(0, 5), [ALL_PRODUCTS]);
+
+  return (
+    <main>
+      {/* Hero Section */}
+        <div 
+            className="relative h-[50vh] min-h-[300px] md:h-[60vh] bg-cover bg-center flex items-center justify-center text-center text-white px-4"
+            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1601924994987-69e26d50dc26?q=80&w=2874&auto=format&fit=crop')" }}
+        >
+            <div className="absolute inset-0 bg-black/40"></div>
+            <div className="relative z-10 animate-fade-in">
+                <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4">
+                    Define Elevate Your Style
+                </h1>
+                <p className="max-w-2xl mx-auto text-lg md:text-xl text-gray-200 mb-8">
+                    Discover curated collections and timeless pieces to elevate your wardrobe.
+                </p>
+                <button onClick={() => navigate('shop')} className="bg-white text-black font-bold py-3 px-8 rounded-md hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 animate-fade-in flex items-center mx-auto" style={{animationDelay: '600ms'}}>
+                    Shop The Collection <ArrowRightIcon />
+                </button>
+            </div>
+        </div>
+
+      {/* Shop by Category */}
+       <section className="py-16 sm:py-24">
+        <div className="container mx-auto px-4 sm:px-6">
+          <h2 className="text-3xl font-bold text-center mb-12">Shop by Category</h2>
+           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              <div onClick={() => { navigate('shop'); setCategory('mens'); }} className="relative rounded-lg overflow-hidden group h-64 cursor-pointer">
+                  <img src="https://i.ibb.co/55z32tw/long-sleeve.png" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
+                  <div className="absolute inset-0 bg-black/40"></div>
+                  <h3 className="absolute bottom-4 left-4 text-white text-xl font-bold">Men's</h3>
+              </div>
+              <div onClick={() => { navigate('shop'); setCategory('womens'); }} className="relative rounded-lg overflow-hidden group h-64 cursor-pointer">
+                  <img src="https://i.ibb.co/4W2DGKm/floral-blouse.png" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
+                  <div className="absolute inset-0 bg-black/40"></div>
+                  <h3 className="absolute bottom-4 left-4 text-white text-xl font-bold">Women's</h3>
+              </div>
+              <div onClick={() => { navigate('shop'); setCategory('jackets'); }} className="relative rounded-lg overflow-hidden group h-64 cursor-pointer">
+                  <img src="https://i.ibb.co/XzcwL5s/black-shearling.png" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
+                  <div className="absolute inset-0 bg-black/40"></div>
+                  <h3 className="absolute bottom-4 left-4 text-white text-xl font-bold">Jackets</h3>
+              </div>
+               <div onClick={() => { navigate('shop'); setCategory('sneakers'); }} className="relative rounded-lg overflow-hidden group h-64 cursor-pointer">
+                  <img src="https://i.ibb.co/0s3pdnc/adidas-nmd.png" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
+                  <div className="absolute inset-0 bg-black/40"></div>
+                  <h3 className="absolute bottom-4 left-4 text-white text-xl font-bold">Footwear</h3>
+              </div>
+           </div>
+        </div>
+      </section>
+
+      {/* Featured Products */}
+      <section className="py-16 sm:py-24 bg-gray-50/50 dark:bg-gray-900/50">
+        <div className="container mx-auto px-4 sm:px-6">
+          <h2 className="text-3xl font-bold text-center mb-12">Featured Products</h2>
+          <ProductGrid products={featuredProducts} />
+        </div>
+      </section>
+
+       {/* New Arrivals */}
+      <section className="py-16 sm:py-24">
+        <div className="container mx-auto px-4 sm:px-6">
+          <h2 className="text-3xl font-bold text-center mb-12">New Arrivals</h2>
+          <ProductGrid products={newArrivals} />
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-16 sm:py-24 bg-gray-50/50 dark:bg-gray-900/50">
+        <div className="container mx-auto px-4 sm:px-6">
+          <h2 className="text-3xl font-bold text-center mb-12">What Our Customers Say</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-white dark:bg-black p-6 rounded-lg shadow-sm">
+              <Rating rating={5}/>
+              <p className="mt-4 mb-2 text-gray-700 dark:text-gray-300">"The quality of the Classic Tee is incredible. So soft and fits perfectly. I bought one in every color."</p>
+              <p className="font-semibold">- Alex R.</p>
+            </div>
+             <div className="bg-white dark:bg-black p-6 rounded-lg shadow-sm">
+              <Rating rating={5}/>
+              <p className="mt-4 mb-2 text-gray-700 dark:text-gray-300">"I'm in love with the Studio Leggings. They're stylish enough to wear out and comfortable enough for lounging."</p>
+              <p className="font-semibold">- Jessica M.</p>
+            </div>
+             <div className="bg-white dark:bg-black p-6 rounded-lg shadow-sm">
+              <Rating rating={4}/>
+              <p className="mt-4 mb-2 text-gray-700 dark:text-gray-300">"Fast shipping and my Windbreaker is fantastic. Great quality for the price. Will be shopping here again."</p>
+              <p className="font-semibold">- David L.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Brands */}
+      <section className="py-16 container mx-auto px-4 sm:px-6 text-center">
+        <h2 className="text-2xl font-bold mb-8">As Seen In</h2>
+        <div className="flex justify-center items-center gap-8 md:gap-16 flex-wrap text-gray-400 dark:text-gray-600">
+          <span className="font-serif font-bold text-3xl">VOGUE</span>
+          <span className="font-serif font-bold text-3xl">GQ</span>
+          <span className="font-serif font-bold text-3xl">ELLE</span>
+          <span className="font-serif font-bold text-3xl">InStyle</span>
+        </div>
+      </section>
+    </main>
+  );
+};
+
+const Footer = () => {
+    const { navigate } = useContext(AppContext);
+    return (
+        <footer className="bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+            <div className="container mx-auto px-4 sm:px-6 py-12">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                    <div className="col-span-full lg:col-span-2">
+                        <a href="#" onClick={(e) => { e.preventDefault(); navigate('home'); }} className="font-bold text-xl text-black dark:text-white">▲ CRWN3</a>
+                        <p className="text-gray-500 dark:text-gray-400 mt-4 max-w-xs">Timeless pieces and modern essentials to define your style.</p>
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-sm tracking-wider uppercase">Shop</h3>
+                        <ul className="mt-4 space-y-2 text-gray-500 dark:text-gray-400">
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('shop'); }} className="hover:text-black dark:hover:text-white">Men</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('shop'); }} className="hover:text-black dark:hover:text-white">Women</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('shop'); }} className="hover:text-black dark:hover:text-white">Accessories</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('shop'); }} className="hover:text-black dark:hover:text-white">New Arrivals</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-sm tracking-wider uppercase">Support</h3>
+                        <ul className="mt-4 space-y-2 text-gray-500 dark:text-gray-400">
+                            <li><a href="#" className="hover:text-black dark:hover:text-white">Contact Us</a></li>
+                            <li><a href="#" className="hover:text-black dark:hover:text-white">FAQ</a></li>
+                            <li><a href="#" className="hover:text-black dark:hover:text-white">Shipping & Returns</a></li>
+                            <li><a href="#" className="hover:text-black dark:hover:text-white">Size Guide</a></li>
+                        </ul>
+                    </div>
+                     <div className="col-span-full md:col-span-2 lg:col-span-2">
+                        <h3 className="font-semibold text-sm tracking-wider uppercase">Stay Connected</h3>
+                        <p className="text-gray-500 dark:text-gray-400 mt-4">Get 10% off your first order when you sign up for our newsletter.</p>
+                        <div className="mt-4 flex">
+                            <input type="email" placeholder="Enter your email" className="w-5 pl-3 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-l-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600"/>
+                            <button className="bg-black text-white dark:bg-white dark:text-black px-4 rounded-r-md font-semibold text-sm">Sign Up</button>
+                        </div>
+                    </div>
+                </div>
+                <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                    <p>&copy; {new Date().getFullYear()} CRWN3 Collective. All Rights Reserved.</p>
+                    <div className="flex space-x-4 mt-4 sm:mt-0">
+                        <a href="#" className="hover:text-black dark:hover:text-white">Privacy Policy</a>
+                        <a href="#" className="hover:text-black dark:hover:text-white">Terms of Service</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    )
+};
+
+const Background = () => (
+    <div className="absolute inset-0 -z-50 h-full w-full bg-white dark:bg-black">
+        <svg className="absolute inset-0 h-full w-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <pattern id="grid-light" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#e5e7eb" strokeWidth="0.5"/></pattern>
+                <pattern id="grid-dark" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#1f2937" strokeWidth="0.5"/></pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid-light)" className="dark:hidden" />
+            <rect width="100%" height="100%" fill="url(#grid-dark)" className="hidden dark:block" />
+        </svg>
+    </div>
+);
+
 export default function App() {
     return (
         <AppProvider>
@@ -600,22 +765,37 @@ export default function App() {
                 }
                 .product-card:hover::before { opacity: 1; }
                 body {
-                  -ms-overflow-style: none; /* for Internet Explorer, Edge */
-                  scrollbar-width: none; /* for Firefox */
+                  -ms-overflow-style: none;
+                  scrollbar-width: none;
                 }
                 body::-webkit-scrollbar {
-                  display: none; /* for Chrome, Safari, and Opera */
+                  display: none;
                 }
             `}</style>
-            <div className="bg-white dark:bg-black text-black dark:text-white min-h-screen font-sans">
+            <div className="bg-white dark:bg-black text-black dark:text-white min-h-screen font-sans flex flex-col">
                 <Background />
                 <ToastContainer />
                 <CartSidebar />
                 <WishlistSidebar />
                 <Header />
-                <MainContent />
+                <div className="flex-grow">
+                  <PageContent />
+                </div>
+                <Footer />
                 <ProductModal />
             </div>
         </AppProvider>
     );
 }
+
+const PageContent = () => {
+  const { activePage } = useContext(AppContext);
+
+  switch (activePage) {
+    case 'shop':
+      return <ShopPage />;
+    case 'home':
+    default:
+      return <HomePage />;
+  }
+};

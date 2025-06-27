@@ -110,16 +110,6 @@ export const Products = [{
         reviews: [{ rating: 5, user: "Blessing" }]
     },
     {
-        id: 19,
-        name: "Red Floral Dress",
-        imageUrl: "https://i.ibb.co/b39pTcr/red-polka-dot-dress.png",
-        price: 7500,
-        category: "womens",
-        description: "A stunning red floral dress perfect for any occasion. Features a comfortable waist tie and a flowing silhouette.",
-        gallery: ["https://i.ibb.co/b39pTcr/red-polka-dot-dress.png"],
-        reviews: [{ rating: 5, user: "Funke" }, { rating: 4, user: "Ifeoma" }]
-    },
-    {
         id: 20,
         name: "Yellow Track Suit",
         imageUrl: "https://i.ibb.co/v1cvwNf/yellow-track-suit.png",
