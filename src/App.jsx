@@ -207,7 +207,7 @@ const ProductCard = React.memo(({ product, index }) => {
                     <img src={product.imageUrl} alt={product.name} className="w-full h-64 sm:h-80 object-cover group-hover:scale-105 transition-transform duration-500" />
                     {onSale && <div className="absolute top-3 left-3 bg-black text-white text-xs font-semibold px-2 py-1 rounded-full z-10">{discountPercent}% OFF</div>}
                     <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent flex justify-end items-end h-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="bg-white text-black py-2 px-4 rounded-md text-sm font-semibold transition-transform transform-gpu group-hover:translate-y-0 translate-y-4 duration-300">Quick Add</div>
+                        <div className="bg-white text-black py-2 px-4 rounded-md text-sm font-semibold transition-transform transform-gpu group-hover:translate-y-0 translate-y-4 duration-300">Add to Cart</div>
                     </div>
                 </div>
                 <div className="pt-3">
