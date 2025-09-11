@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback, createContext, useContext, useRef } from 'react';
 import { Products } from './data/products';
 import About from './About.jsx';
+import Login from './Login.jsx';
+import Signup from './Signup.jsx';
 
 // --- ICONS ---
 const SunIcon = () => <svg height="20" width="20" stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>;
@@ -16,7 +18,7 @@ const ArrowRightIcon = () => <svg className="w-4 h-4 ml-2" fill="none" stroke="c
 
 const ALL_PRODUCTS = Products.map(p => ({ ...p, availableSizes: ["S", "M", "L", "XL"], availableColors: ["#808080", "#000000", "#FFFFFF", "#ff0000"], gallery: p.gallery?.length > 0 ? p.gallery : [p.imageUrl, 'https://placehold.co/400x600/cccccc/ffffff?text=View+2', 'https://placehold.co/400x600/999999/ffffff?text=View+3', 'https://placehold.co/400x600/666666/ffffff?text=View+4', 'https://placehold.co/400x600/333333/ffffff?text=View+5'] }));
 
-const AppContext = createContext();
+export const AppContext = createContext();
 
 // --- PROVIDER COMPONENT ---
 const AppProvider = ({ children }) => {
@@ -140,25 +142,45 @@ const Header = () => {
         setIsMenuOpen(false);
     }
 
-    const MobileMenu = () => (
-        <div className={`fixed inset-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-lg transition-opacity md:hidden ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-            <div className="container mx-auto px-4 sm:px-6 py-3 flex flex-col h-full">
-                <div className="flex justify-between items-center mb-8">
-                    <a href="#" onClick={(e) => handleNav(e, 'home')} className="font-bold text-lg text-black dark:text-white">▲ CRWN3</a>
-                    <button onClick={() => setIsMenuOpen(false)} className="p-2 -mr-2"><CloseIcon /></button>
+    const MobileMenu = () => {
+        const [mobileQuery, setMobileQuery] = useState('');
+        const onKeyDown = (e) => {
+            if (e.key === 'Enter') {
+                setSearchTerm(mobileQuery);
+                navigate('shop');
+                setIsMenuOpen(false);
+            }
+        };
+
+        return (
+            <div className={`fixed inset-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-lg transition-opacity md:hidden ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <div className="container mx-auto px-4 sm:px-6 py-3 flex flex-col h-full">
+                    <div className="flex justify-between items-center mb-8">
+                        <a href="#" onClick={(e) => handleNav(e, 'home')} className="font-bold text-lg text-black dark:text-white">▲ CRWN3</a>
+                        <button onClick={() => setIsMenuOpen(false)} className="p-2 -mr-2"><CloseIcon /></button>
+                    </div>
+                    <div className="relative mb-8">
+                        <input
+                            type="text"
+                            value={mobileQuery}
+                            onChange={e => setMobileQuery(e.target.value)}
+                            onKeyDown={onKeyDown}
+                            placeholder="Search products..."
+                            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 transition-all"
+                        />
+                        <div className="absolute top-0 left-0 flex items-center h-full pl-3 pointer-events-none text-gray-400"><SearchIcon /></div>
+                    </div>
+                    <nav className="flex flex-col items-center gap-6 text-lg text-gray-500 dark:text-gray-400">
+                        <a href="#" onClick={(e) => handleNav(e, 'shop')} className="hover:text-black dark:hover:text-white transition-colors">Shop</a>
+                        <a href="#" onClick={(e) => handleNav(e, 'about')} className="hover:text-black dark:hover:text-white transition-colors">About</a>
+                        <a href="#" onClick={(e) => handleNav(e, 'contact')} className="hover:text-black dark:hover:text-white transition-colors">Contact</a>
+                        <a href="#" onClick={(e) => handleNav(e, 'login')} className="hover:text-black dark:hover:text-white transition-colors">Login</a>
+                        <a href="#" onClick={(e) => handleNav(e, 'signup')} className="hover:text-black dark:hover:text-white transition-colors">Sign up</a>
+                    </nav>
                 </div>
-                <div className="relative mb-8">
-                    <input type="text" onChange={e => setSearchTerm(e.target.value)} placeholder="Search products..." className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 transition-all"/>
-                    <div className="absolute top-0 left-0 flex items-center h-full pl-3 pointer-events-none text-gray-400"><SearchIcon /></div>
-                </div>
-                <nav className="flex flex-col items-center gap-6 text-lg text-gray-500 dark:text-gray-400">
-                    <a href="#" onClick={(e) => handleNav(e, 'shop')} className="hover:text-black dark:hover:text-white transition-colors">Shop</a>
-                    <a href="#" onClick={(e) => handleNav(e, 'about')} className="hover:text-black dark:hover:text-white transition-colors">About</a>
-                    <a href="#" onClick={(e) => handleNav(e, 'contact')} className="hover:text-black dark:hover:text-white transition-colors">Contact</a>
-                </nav>
             </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <>
@@ -170,6 +192,8 @@ const Header = () => {
                             <a href="#" onClick={(e) => handleNav(e, 'shop')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'shop' ? 'text-black dark:text-white' : ''}`}>Shop</a>
                             <a href="#" onClick={(e) => handleNav(e, 'about')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'about' ? 'text-black dark:text-white' : ''}`}>About</a>
                             <a href="#" onClick={(e) => handleNav(e, 'contact')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'contact' ? 'text-black dark:text-white' : ''}`}>Contact</a>
+                            <a href="#" onClick={(e) => handleNav(e, 'login')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'login' ? 'text-black dark:text-white' : ''}`}>Login</a>
+                            <a href="#" onClick={(e) => handleNav(e, 'signup')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'signup' ? 'text-black dark:text-white' : ''}`}>Sign up</a>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -818,6 +842,10 @@ const PageContent = () => {
       return <ShopPage />;
         case 'about':
             return <About />;
+        case 'login':
+            return <Login />;
+        case 'signup':
+            return <Signup />;
     case 'home':
     default:
       return <HomePage />;

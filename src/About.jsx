@@ -9,12 +9,10 @@ const About = () => {
       </section>
 
       {/* Our Story */}
-      <section className="mt-12 grid gap-8 items-center text-center">
-        <div>
-          <h2 className="text-2xl font-bold mb-3">Our Story</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">Born from a desire to simplify wardrobes, CRWN3 began when a few designers and makers decided to focus on the essentials: quality materials, honest pricing, and timeless design. We work with partners who share our values and make thoughtful choices to reduce waste and increase longevity.</p>
-          <p className="text-gray-600 dark:text-gray-300">We design with purpose — every seam, fabric choice, and fit is considered so the products you buy become staples in your daily life.</p>
-        </div>
+      <section className="mt-12 max-w-3xl mx-auto text-left">
+        <h2 className="text-2xl font-bold mb-3">Our Story</h2>
+        <p className="text-gray-600 dark:text-gray-300 mb-4">Born from a desire to simplify wardrobes, CRWN3 began when a few designers and makers decided to focus on the essentials: quality materials, honest pricing, and timeless design. We work with partners who share our values and make thoughtful choices to reduce waste and increase longevity.</p>
+        <p className="text-gray-600 dark:text-gray-300">We design with purpose — every seam, fabric choice, and fit is considered so the products you buy become staples in your daily life.</p>
       </section>
 
       {/* Values / Features */}
