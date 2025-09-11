@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, createContext, useContext, useRef } from 'react';
 import { Products } from './data/products';
+import About from './About.jsx';
 
 // --- ICONS ---
 const SunIcon = () => <svg height="20" width="20" stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>;
@@ -167,8 +168,8 @@ const Header = () => {
                         <a href="#" onClick={(e) => handleNav(e, 'home')} className="font-bold text-lg text-black dark:text-white transition-transform hover:scale-105">▲ CRWN3</a>
                         <div className="hidden md:flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
                             <a href="#" onClick={(e) => handleNav(e, 'shop')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'shop' ? 'text-black dark:text-white' : ''}`}>Shop</a>
-                            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">About</a>
-                            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">Contact</a>
+                            <a href="#" onClick={(e) => handleNav(e, 'about')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'about' ? 'text-black dark:text-white' : ''}`}>About</a>
+                            <a href="#" onClick={(e) => handleNav(e, 'contact')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'contact' ? 'text-black dark:text-white' : ''}`}>Contact</a>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -697,10 +698,7 @@ const Footer = () => {
                      <div className="col-span-full md:col-span-2 lg:col-span-2">
                         <h3 className="font-semibold text-sm tracking-wider uppercase">Stay Connected</h3>
                         <p className="text-gray-500 dark:text-gray-400 mt-4">Get 10% off your first order when you sign up for our newsletter.</p>
-                        <div className="mt-4 flex">
-                            <input type="email" placeholder="Enter your email" className="w-5 pl-3 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-l-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600"/>
-                            <button className="bg-black text-white dark:bg-white dark:text-black px-4 rounded-r-md font-semibold text-sm">Sign Up</button>
-                        </div>
+                        <FooterSubscribe />
                     </div>
                 </div>
                 <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400">
@@ -713,6 +711,30 @@ const Footer = () => {
             </div>
         </footer>
     )
+};
+
+const FooterSubscribe = () => {
+    const { showToast } = useContext(AppContext);
+    const [email, setEmail] = React.useState('');
+
+    const handleSubscribe = () => {
+        const re = /^\S+@\S+\.\S+$/;
+        if (!re.test(email)) {
+            showToast('Please enter a valid email address', 'error');
+            return;
+        }
+        showToast('Thanks for subscribing!');
+        setEmail('');
+    };
+
+    return (
+        <div className="mt-4">
+            <div className="flex max-w-md">
+                <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Enter your email" className="flex-grow px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-l-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600"/>
+                <button onClick={handleSubscribe} className="bg-black text-white dark:bg-white dark:text-black px-4 rounded-r-md font-semibold text-sm">Sign Up</button>
+            </div>
+        </div>
+    );
 };
 
 const Background = () => (
@@ -794,6 +816,8 @@ const PageContent = () => {
   switch (activePage) {
     case 'shop':
       return <ShopPage />;
+        case 'about':
+            return <About />;
     case 'home':
     default:
       return <HomePage />;
