@@ -1,0 +1,35 @@
+/* Header redesign styles */
+.site-header {
+  backdrop-filter: blur(6px);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand {
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.nav-links a {
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.cta-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+.search-bar-desktop {
+  margin-top: 8px;
+}
+.mobile-logo-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .nav-links { display: none; }
+  .mobile-logo-center { justify-content: center; }
+}

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback, createContext, useContext, useRef } from 'react';
+import './header.css';
 import { Products } from './data/products';
 import About from './About.jsx';
 import Login from './Login.jsx';
 import Signup from './Signup.jsx';
+import Contact from './Contact.jsx';
 
 // --- ICONS ---
 const SunIcon = () => <svg height="20" width="20" stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>;
@@ -155,10 +157,12 @@ const Header = () => {
         return (
             <div className={`fixed inset-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-lg transition-opacity md:hidden ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                 <div className="container mx-auto px-4 sm:px-6 py-3 flex flex-col h-full">
-                    <div className="flex justify-between items-center mb-8">
-                        <a href="#" onClick={(e) => handleNav(e, 'home')} className="font-bold text-lg text-black dark:text-white">▲ CRWN3</a>
-                        <button onClick={() => setIsMenuOpen(false)} className="p-2 -mr-2"><CloseIcon /></button>
-                    </div>
+                                        <div className="flex justify-between items-center mb-8">
+                                                <div className="mobile-logo-center">
+                                                    <a href="#" onClick={(e) => handleNav(e, 'home')} className="brand text-lg text-black dark:text-white">▲ CRWN3</a>
+                                                </div>
+                                                <button onClick={() => setIsMenuOpen(false)} className="p-2 -mr-2"><CloseIcon /></button>
+                                        </div>
                     <div className="relative mb-8">
                         <input
                             type="text"
@@ -184,29 +188,45 @@ const Header = () => {
 
     return (
         <>
-            <header className="bg-white/80 dark:bg-black/80 backdrop-blur-sm sticky top-0 z-30 border-b border-gray-200/80 dark:border-gray-800/80">
-                <nav className="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
-                    <div className="flex items-center gap-6">
-                        <a href="#" onClick={(e) => handleNav(e, 'home')} className="font-bold text-lg text-black dark:text-white transition-transform hover:scale-105">▲ CRWN3</a>
-                        <div className="hidden md:flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
-                            <a href="#" onClick={(e) => handleNav(e, 'shop')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'shop' ? 'text-black dark:text-white' : ''}`}>Shop</a>
-                            <a href="#" onClick={(e) => handleNav(e, 'about')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'about' ? 'text-black dark:text-white' : ''}`}>About</a>
-                            <a href="#" onClick={(e) => handleNav(e, 'contact')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'contact' ? 'text-black dark:text-white' : ''}`}>Contact</a>
-                            <a href="#" onClick={(e) => handleNav(e, 'login')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'login' ? 'text-black dark:text-white' : ''}`}>Login</a>
-                            <a href="#" onClick={(e) => handleNav(e, 'signup')} className={`hover:text-black dark:hover:text-white transition-colors ${activePage === 'signup' ? 'text-black dark:text-white' : ''}`}>Sign up</a>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="relative flex-grow max-w-xs hidden sm:block">
-                           <input type="text" onChange={e => { setSearchTerm(e.target.value); navigate('shop'); }} placeholder="Search..." className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 transition-all"/>
-                            <div className="absolute top-0 left-0 flex items-center h-full pl-3 pointer-events-none text-gray-400"><SearchIcon /></div>
-                        </div>
-                        <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors"><span className="transition-transform duration-500 inline-block rotate-0 dark:rotate-180">{theme === 'light' ? <MoonIcon /> : <SunIcon />}</span></button>
-                        <button onClick={() => setIsWishlistOpen(true)} className="relative p-2 rounded-md hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors"><WishlistIcon className={`w-6 h-6 transition-all ${wishlist.length > 0 ? 'text-red-500 fill-red-500' : 'text-gray-500 dark:text-gray-400'}`} /><span className={`absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center transition-transform duration-200 ${wishlist.length > 0 ? 'scale-100' : 'scale-0'}`}>{wishlist.length}</span></button>
-                        <button onClick={() => setIsCartOpen(true)} className="relative p-2 rounded-md hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors"><CartIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" /><span className={`absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center transition-transform duration-200 ${cartCount > 0 ? 'scale-100' : 'scale-0'}`}>{cartCount}</span></button>
+            <header className="site-header bg-white/80 dark:bg-black/80 sticky top-0 z-30 border-b border-gray-200/80 dark:border-gray-800/80">
+                <div className="container mx-auto px-4 sm:px-6 py-2 header-inner">
+                    <div className="flex items-center gap-4">
                         <button onClick={() => setIsMenuOpen(true)} className="p-2 rounded-md text-gray-500 dark:text-gray-400 md:hidden"><MenuIcon /></button>
+                        <a href="#" onClick={(e) => handleNav(e, 'home')} className="brand text-lg text-black dark:text-white">▲ CRWN3</a>
                     </div>
-                </nav>
+                    <nav className="nav-links hidden md:flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <a href="#" onClick={(e) => handleNav(e, 'shop')} className={`hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${activePage === 'shop' ? 'font-bold' : ''}`}>Shop</a>
+                        <a href="#" onClick={(e) => handleNav(e, 'about')} className={`hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${activePage === 'about' ? 'font-bold' : ''}`}>About</a>
+                        <a href="#" onClick={(e) => handleNav(e, 'contact')} className={`hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${activePage === 'contact' ? 'font-bold' : ''}`}>Contact</a>
+                    </nav>
+                    <div className="flex items-center gap-3">
+                        <div className="hidden sm:block search-bar-desktop">
+                            <input type="text" onChange={e => { setSearchTerm(e.target.value); navigate('shop'); }} placeholder="Search products..." className="w-56 pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400"/>
+                        </div>
+
+                        {/* Icons: theme, wishlist, cart */}
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} title="Toggle theme" aria-label="Toggle theme" className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors">
+                                {theme === 'light' ? <MoonIcon /> : <SunIcon />}
+                            </button>
+
+                            <button onClick={() => setIsWishlistOpen(true)} title="Wishlist" aria-label="Open wishlist" className="relative p-2 rounded-md hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors">
+                                <WishlistIcon className={`w-6 h-6 ${wishlist.length > 0 ? 'text-red-500 fill-red-500' : 'text-gray-500 dark:text-gray-400'}`} />
+                                <span className={`absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center ${wishlist.length > 0 ? 'scale-100' : 'scale-0'}`}>{wishlist.length}</span>
+                            </button>
+
+                            <button onClick={() => setIsCartOpen(true)} title="Cart" aria-label="Open cart" className="relative p-2 rounded-md hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors">
+                                <CartIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+                                <span className={`absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center ${cartCount > 0 ? 'scale-100' : 'scale-0'}`}>{cartCount}</span>
+                            </button>
+                        </div>
+
+                        <div className="hidden md:flex items-center gap-2">
+                            <button onClick={() => navigate('login')} className="cta-btn bg-transparent border border-gray-200 dark:border-gray-700 rounded-md px-3 py-1 text-sm">Sign in</button>
+                            <button onClick={() => navigate('signup')} className="cta-btn bg-black text-white dark:bg-white dark:text-black text-sm">Sign up</button>
+                        </div>
+                    </div>
+                </div>
             </header>
             <MobileMenu />
         </>
@@ -846,6 +866,8 @@ const PageContent = () => {
             return <Login />;
         case 'signup':
             return <Signup />;
+            case 'contact':
+                return <Contact />;
     case 'home':
     default:
       return <HomePage />;
