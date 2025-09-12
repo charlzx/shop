@@ -20,6 +20,8 @@ const Login = () => {
     navigate('home');
   };
 
+  // Google sign-in currently disabled
+
   const handleReset = (e) => {
     e.preventDefault();
     const re = /^\S+@\S+\.\S+$/;
@@ -37,6 +39,22 @@ const Login = () => {
       <SEO title={`Login — CRWN3`} description={`Sign in to your CRWN3 account to view orders, manage your wishlist, and checkout faster.`} url={typeof window !== 'undefined' ? window.location.href : undefined} />
     <main className="container mx-auto px-4 sm:px-6 py-16 max-w-md">
       <h1 className="text-3xl font-bold mb-4">Sign in to your account</h1>
+
+      <div className="mb-6">
+        <button disabled title="Google sign-in not enabled" className="w-full flex items-center justify-center gap-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 rounded-md opacity-60 cursor-not-allowed">
+          <span className="inline-flex items-center justify-center w-6 h-6 bg-white rounded-sm">
+            {/* Google G logo */}
+            <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.64 9.2c0-.63-.06-1.24-.18-1.82H9v3.44h4.84c-.21 1.12-.84 2.07-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.59z" fill="#4285F4"/>
+              <path d="M9 18c2.43 0 4.47-.8 5.96-2.17l-2.91-2.26C11.17 13.07 10.14 13.5 9 13.5c-2.3 0-4.25-1.55-4.95-3.64H1.07v2.28C2.56 15.98 5.56 18 9 18z" fill="#34A853"/>
+              <path d="M4.05 9.86A5.4 5.4 0 013.78 9c0-.32.03-.64.07-.95V5.77H1.07A8.98 8.98 0 000 9c0 1.45.35 2.82.97 4.02l3.08-3.16z" fill="#FBBC05"/>
+              <path d="M9 3.5c1.32 0 2.5.45 3.43 1.34l2.57-2.56C13.47.99 11.43 0 9 0 5.56 0 2.56 2.02 1.07 4.73l3.08 2.28C4.75 5.05 6.7 3.5 9 3.5z" fill="#EA4335"/>
+            </svg>
+          </span>
+          <span className="text-sm font-medium">Sign in with Google</span>
+        </button>
+      </div>
+
       <form onSubmit={handleLogin} className="space-y-4">
         <label className="block">
           <span className="text-sm text-gray-600 dark:text-gray-300">Email</span>
@@ -54,6 +72,8 @@ const Login = () => {
           </div>
         </div>
       </form>
+
+      {/* Google sign-in is currently disabled; duplicate bottom button removed */}
 
       {showReset && (
         <form onSubmit={handleReset} className="mt-6 bg-gray-50 dark:bg-gray-900 p-4 rounded-md">

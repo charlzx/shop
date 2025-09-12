@@ -6,6 +6,8 @@ import About from './About.jsx';
 import Login from './Login.jsx';
 import Signup from './Signup.jsx';
 import Contact from './Contact.jsx';
+import CartPage from './Cart.jsx';
+import Checkout from './Checkout.jsx';
 import NotFound from './NotFound.jsx';
 
 // --- ICONS ---
@@ -27,6 +29,13 @@ const ALL_PRODUCTS = Products.map(p => {
     return base;
 });
 
+const COUPON_DEFINITIONS = {
+    SAVE10: { type: 'percent', value: 10, description: '10% off your order' },
+    SAVE20: { type: 'percent', value: 20, description: '20% off your order' },
+    WELCOME500: { type: 'flat', value: 500, description: '₦500 off your order' },
+    FREE: { type: 'free-shipping', value: 0, description: 'Free shipping' }
+};
+
 import { AppContext } from './AppContext.js';
 import SEO from './SEO.jsx';
 
@@ -46,6 +55,7 @@ const AppProvider = ({ children }) => {
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isWishlistOpen, setIsWishlistOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
 
     useEffect(() => {
         const storedTheme = localStorage.getItem('theme') || 'light';
@@ -58,8 +68,8 @@ const AppProvider = ({ children }) => {
             
             const storedWishlist = localStorage.getItem('wishlist');
             if (storedWishlist) setWishlist(JSON.parse(storedWishlist));
-        } catch (error) {
-            console.error("Failed to parse from localStorage", error);
+        } catch {
+            // ignore parse errors and clear stale storage
             localStorage.removeItem('cart');
             localStorage.removeItem('wishlist');
         }
@@ -76,7 +86,7 @@ const AppProvider = ({ children }) => {
                 const newUrl = clean + (window.location.search || '') + (window.location.hash || '');
                 history.replaceState(null, '', newUrl);
             }
-        } catch (e) {
+        } catch {
             // ignore in non-browser environments
         }
     }, []);
@@ -115,6 +125,20 @@ const AppProvider = ({ children }) => {
         setCart(currentCart => currentCart.map(item => item.cartItemId === cartItemId ? { ...item, quantity } : item));
       }
     }, [removeFromCart]);
+
+        const clearCart = useCallback(() => {
+                setCart([]);
+        }, []);
+
+        const applyCoupon = useCallback((code) => {
+            const c = (code || '').toUpperCase().trim();
+            if (!c) return false;
+            if (!COUPON_DEFINITIONS[c]) return false;
+            setAppliedCoupon(c);
+            return true;
+        }, []);
+
+        const removeCoupon = useCallback(() => setAppliedCoupon(null), []);
 
     const toggleWishlist = useCallback((productId) => {
         const product = ALL_PRODUCTS.find(p => p.id === productId);
@@ -165,7 +189,7 @@ const AppProvider = ({ children }) => {
             }
         }
 
-    const value = { theme, setTheme, cart, addToCart, removeFromCart, updateCartQuantity, wishlist, toggleWishlist, searchTerm, setSearchTerm, sortBy, setSortBy, category, setCategory, isLoading, currentProductId, setCurrentProductId, openProduct, toasts, showToast, isCartOpen, setIsCartOpen, isWishlistOpen, setIsWishlistOpen, currentPage, setCurrentPage, ALL_PRODUCTS, navigate };
+    const value = { theme, setTheme, cart, addToCart, removeFromCart, updateCartQuantity, clearCart, appliedCoupon, applyCoupon, removeCoupon, COUPON_DEFINITIONS, wishlist, toggleWishlist, searchTerm, setSearchTerm, sortBy, setSortBy, category, setCategory, isLoading, currentProductId, setCurrentProductId, openProduct, toasts, showToast, isCartOpen, setIsCartOpen, isWishlistOpen, setIsWishlistOpen, currentPage, setCurrentPage, ALL_PRODUCTS, navigate };
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
@@ -326,6 +350,7 @@ const ProductGrid = ({ products }) => <div className="grid grid-cols-2 md:grid-c
 
 const CartSidebar = () => {
     const { isCartOpen, setIsCartOpen, cart, removeFromCart, updateCartQuantity } = useContext(AppContext);
+    const navigate = useNavigate();
     const subtotal = useMemo(() => cart.reduce((sum, item) => {
         const price = item.discountPrice && new Date(item.saleEndDate) > new Date() ? item.discountPrice : item.price;
         return sum + price * item.quantity;
@@ -377,8 +402,8 @@ const CartSidebar = () => {
                             <span>Subtotal</span>
                             <span>₦{subtotal.toLocaleString()}</span>
                         </div>
-                        <button className="w-full bg-black text-white dark:bg-white dark:text-black py-3 rounded-md font-semibold transition-transform hover:scale-[1.02]">
-                            Proceed to Checkout
+                        <button onClick={() => { setIsCartOpen(false); navigate('/cart'); }} className="w-full bg-black text-white dark:bg-white dark:text-black py-3 rounded-md font-semibold transition-transform hover:scale-[1.02]">
+                            View Cart
                         </button>
                     </div>
                 )}
@@ -935,6 +960,8 @@ export default function App() {
                                         <Route path="/product/:slug" element={<ProductPage />} />
                                         <Route path="/about" element={<About />} />
                                         <Route path="/contact" element={<Contact />} />
+                                        <Route path="/cart" element={<CartPage />} />
+                                        <Route path="/checkout" element={<Checkout />} />
                                         <Route path="/login" element={<Login />} />
                                         <Route path="/signup" element={<Signup />} />
                                         <Route path="*" element={<NotFound />} />

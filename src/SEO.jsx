@@ -54,7 +54,7 @@ export default function SEO({ title, description, image, url, type = 'website', 
             }
             try {
                 script.textContent = JSON.stringify(jsonLd);
-            } catch (e) {
+            } catch {
                 script.textContent = '';
             }
         }
