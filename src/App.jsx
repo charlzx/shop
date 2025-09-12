@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useMemo, useCallback, createContext, useContext, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useContext, useRef } from 'react';
+import { Link, NavLink, useNavigate, useParams, Routes, Route, Navigate } from 'react-router-dom';
 import './header.css';
 import { Products } from './data/products';
 import About from './About.jsx';
 import Login from './Login.jsx';
 import Signup from './Signup.jsx';
 import Contact from './Contact.jsx';
+import NotFound from './NotFound.jsx';
 
 // --- ICONS ---
 const SunIcon = () => <svg height="20" width="20" stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>;
@@ -18,9 +20,16 @@ const TrashIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColo
 const StarIcon = ({ className }) => <svg className={className} fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>;
 const ArrowRightIcon = () => <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>;
 
-const ALL_PRODUCTS = Products.map(p => ({ ...p, availableSizes: ["S", "M", "L", "XL"], availableColors: ["#808080", "#000000", "#FFFFFF", "#ff0000"], gallery: p.gallery?.length > 0 ? p.gallery : [p.imageUrl, 'https://placehold.co/400x600/cccccc/ffffff?text=View+2', 'https://placehold.co/400x600/999999/ffffff?text=View+3', 'https://placehold.co/400x600/666666/ffffff?text=View+4', 'https://placehold.co/400x600/333333/ffffff?text=View+5'] }));
+const ALL_PRODUCTS = Products.map(p => {
+    const base = { ...p, availableSizes: ["S", "M", "L", "XL"], availableColors: ["#808080", "#000000", "#FFFFFF", "#ff0000"], gallery: p.gallery?.length > 0 ? p.gallery : [p.imageUrl, 'https://placehold.co/400x600/cccccc/ffffff?text=View+2', 'https://placehold.co/400x600/999999/ffffff?text=View+3', 'https://placehold.co/400x600/666666/ffffff?text=View+4', 'https://placehold.co/400x600/333333/ffffff?text=View+5'] };
+    // use persisted slug from data/products.js (generated there)
+    if (p.slug) base.slug = p.slug;
+    return base;
+});
 
-export const AppContext = createContext();
+import { AppContext } from './AppContext.js';
+
+const CATEGORIES = ["all", "hats", "sneakers", "jackets", "womens", "mens"];
 
 // --- PROVIDER COMPONENT ---
 const AppProvider = ({ children }) => {
@@ -31,12 +40,11 @@ const AppProvider = ({ children }) => {
     const [sortBy, setSortBy] = useState('default');
     const [category, setCategory] = useState('all');
     const [isLoading, setIsLoading] = useState(true);
-    const [modalProduct, setModalProduct] = useState(null);
+    const [currentProductId, setCurrentProductId] = useState(null);
     const [toasts, setToasts] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isWishlistOpen, setIsWishlistOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [activePage, setActivePage] = useState('home'); // 'home' or 'shop'
 
     useEffect(() => {
         const storedTheme = localStorage.getItem('theme') || 'light';
@@ -56,6 +64,20 @@ const AppProvider = ({ children }) => {
         }
 
         setTimeout(() => setIsLoading(false), 800);
+    }, []);
+
+    // Normalize incoming `.html` suffixed paths so /shop.html -> /shop for the SPA router
+    useEffect(() => {
+        try {
+            const path = window.location.pathname || '/';
+            if (path.endsWith('.html')) {
+                const clean = path.replace(/\.html$/i, '') || '/';
+                const newUrl = clean + (window.location.search || '') + (window.location.hash || '');
+                history.replaceState(null, '', newUrl);
+            }
+        } catch (e) {
+            // ignore in non-browser environments
+        }
     }, []);
     
     useEffect(() => { localStorage.setItem('theme', theme); document.documentElement.className = theme; }, [theme]);
@@ -109,12 +131,40 @@ const AppProvider = ({ children }) => {
         setCurrentPage(1);
     }, [category, sortBy, searchTerm]);
 
-    const navigate = (page) => {
-      setActivePage(page);
-      window.scrollTo(0, 0);
-    }
+        // routerNavigate is the actual react-router navigate function
+        const routerNavigate = useNavigate();
 
-    const value = { theme, setTheme, cart, addToCart, removeFromCart, updateCartQuantity, wishlist, toggleWishlist, searchTerm, setSearchTerm, sortBy, setSortBy, category, setCategory, isLoading, modalProduct, setModalProduct, toasts, showToast, isCartOpen, setIsCartOpen, isWishlistOpen, setIsWishlistOpen, currentPage, setCurrentPage, ALL_PRODUCTS, activePage, navigate };
+        const navigate = (pageOrPath) => {
+            // kept for compatibility with older components — will be removed shortly
+            // Accept either full paths (starting with '/') or symbolic names like 'home', 'shop', 'login'
+            let to = '/';
+            if (typeof pageOrPath === 'string' && pageOrPath.startsWith('/')) {
+                to = pageOrPath;
+            } else {
+                switch (pageOrPath) {
+                    case 'home': to = '/'; break;
+                    case 'shop': to = '/shop'; break;
+                    case 'login': to = '/login'; break;
+                    case 'signup': to = '/signup'; break;
+                    case 'contact': to = '/contact'; break;
+                    default: to = '/';
+                }
+            }
+            window.scrollTo(0, 0);
+            routerNavigate(to);
+        }
+
+        const openProduct = (productId) => {
+            const product = ALL_PRODUCTS.find(p => p.id === productId);
+            if (product) {
+                // navigate to the canonical product route
+                setCurrentProductId(productId);
+                routerNavigate(`/product/${product.slug}`);
+                window.scrollTo(0, 0);
+            }
+        }
+
+    const value = { theme, setTheme, cart, addToCart, removeFromCart, updateCartQuantity, wishlist, toggleWishlist, searchTerm, setSearchTerm, sortBy, setSortBy, category, setCategory, isLoading, currentProductId, setCurrentProductId, openProduct, toasts, showToast, isCartOpen, setIsCartOpen, isWishlistOpen, setIsWishlistOpen, currentPage, setCurrentPage, ALL_PRODUCTS, navigate };
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
@@ -126,7 +176,8 @@ const ToastContainer = () => {
 };
 
 const Header = () => {
-    const { theme, setTheme, cart, wishlist, setSearchTerm, setIsCartOpen, setIsWishlistOpen, navigate, activePage } = useContext(AppContext);
+    const { theme, setTheme, cart, wishlist, setSearchTerm, setIsCartOpen, setIsWishlistOpen } = useContext(AppContext);
+    const navigate = useNavigate();
     const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -138,9 +189,9 @@ const Header = () => {
         }
     }, [isMenuOpen]);
     
-    const handleNav = (e, page) => {
+    const handleNav = (e, to) => {
         e.preventDefault();
-        navigate(page);
+        navigate(to);
         setIsMenuOpen(false);
     }
 
@@ -149,7 +200,7 @@ const Header = () => {
         const onKeyDown = (e) => {
             if (e.key === 'Enter') {
                 setSearchTerm(mobileQuery);
-                navigate('shop');
+                navigate('/shop');
                 setIsMenuOpen(false);
             }
         };
@@ -175,11 +226,11 @@ const Header = () => {
                         <div className="absolute top-0 left-0 flex items-center h-full pl-3 pointer-events-none text-gray-400"><SearchIcon /></div>
                     </div>
                     <nav className="flex flex-col items-center gap-6 text-lg text-gray-500 dark:text-gray-400">
-                        <a href="#" onClick={(e) => handleNav(e, 'shop')} className="hover:text-black dark:hover:text-white transition-colors">Shop</a>
-                        <a href="#" onClick={(e) => handleNav(e, 'about')} className="hover:text-black dark:hover:text-white transition-colors">About</a>
-                        <a href="#" onClick={(e) => handleNav(e, 'contact')} className="hover:text-black dark:hover:text-white transition-colors">Contact</a>
-                        <a href="#" onClick={(e) => handleNav(e, 'login')} className="hover:text-black dark:hover:text-white transition-colors">Login</a>
-                        <a href="#" onClick={(e) => handleNav(e, 'signup')} className="hover:text-black dark:hover:text-white transition-colors">Sign up</a>
+                        <a href="#" onClick={(e) => handleNav(e, '/shop')} className="hover:text-black dark:hover:text-white transition-colors">Shop</a>
+                        <a href="#" onClick={(e) => handleNav(e, '/about')} className="hover:text-black dark:hover:text-white transition-colors">About</a>
+                        <a href="#" onClick={(e) => handleNav(e, '/contact')} className="hover:text-black dark:hover:text-white transition-colors">Contact</a>
+                        <a href="#" onClick={(e) => handleNav(e, '/login')} className="hover:text-black dark:hover:text-white transition-colors">Login</a>
+                        <a href="#" onClick={(e) => handleNav(e, '/signup')} className="hover:text-black dark:hover:text-white transition-colors">Sign up</a>
                     </nav>
                 </div>
             </div>
@@ -192,16 +243,16 @@ const Header = () => {
                 <div className="container mx-auto px-4 sm:px-6 py-2 header-inner">
                     <div className="flex items-center gap-4">
                         <button onClick={() => setIsMenuOpen(true)} className="p-2 rounded-md text-gray-500 dark:text-gray-400 md:hidden"><MenuIcon /></button>
-                        <a href="#" onClick={(e) => handleNav(e, 'home')} className="brand text-lg text-black dark:text-white">▲ CRWN3</a>
+                        <a href="#" onClick={(e) => handleNav(e, '/')} className="brand text-lg text-black dark:text-white">▲ CRWN3</a>
                     </div>
                     <nav className="nav-links hidden md:flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <a href="#" onClick={(e) => handleNav(e, 'shop')} className={`hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${activePage === 'shop' ? 'font-bold' : ''}`}>Shop</a>
-                        <a href="#" onClick={(e) => handleNav(e, 'about')} className={`hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${activePage === 'about' ? 'font-bold' : ''}`}>About</a>
-                        <a href="#" onClick={(e) => handleNav(e, 'contact')} className={`hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${activePage === 'contact' ? 'font-bold' : ''}`}>Contact</a>
+                            <NavLink to="/shop" className={({isActive}) => `hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isActive ? 'font-bold' : ''}`}>Shop</NavLink>
+                        <NavLink to="/about" className={({isActive}) => `hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isActive ? 'font-bold' : ''}`}>About</NavLink>
+                        <NavLink to="/contact" className={({isActive}) => `hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isActive ? 'font-bold' : ''}`}>Contact</NavLink>
                     </nav>
                     <div className="flex items-center gap-3">
                         <div className="hidden sm:block search-bar-desktop">
-                            <input type="text" onChange={e => { setSearchTerm(e.target.value); navigate('shop'); }} placeholder="Search products..." className="w-56 pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400"/>
+                            <input type="text" onChange={e => { setSearchTerm(e.target.value); navigate('/shop'); }} placeholder="Search products..." className="w-56 pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400"/>
                         </div>
 
                         {/* Icons: theme, wishlist, cart */}
@@ -222,8 +273,8 @@ const Header = () => {
                         </div>
 
                         <div className="hidden md:flex items-center gap-2">
-                            <button onClick={() => navigate('login')} className="cta-btn bg-transparent border border-gray-200 dark:border-gray-700 rounded-md px-3 py-1 text-sm">Sign in</button>
-                            <button onClick={() => navigate('signup')} className="cta-btn bg-black text-white dark:bg-white dark:text-black text-sm">Sign up</button>
+                            <button onClick={() => navigate('/login')} className="cta-btn bg-transparent border border-gray-200 dark:border-gray-700 rounded-md px-3 py-1 text-sm">Sign in</button>
+                            <button onClick={() => navigate('/signup')} className="cta-btn bg-black text-white dark:bg-white dark:text-black text-sm">Sign up</button>
                         </div>
                     </div>
                 </div>
@@ -234,7 +285,7 @@ const Header = () => {
 };
 
 const ProductCard = React.memo(({ product, index }) => {
-    const { setModalProduct } = useContext(AppContext);
+    const { openProduct } = useContext(AppContext);
     const onSale = product.discountPrice && new Date(product.saleEndDate) > new Date();
     const discountPercent = onSale ? Math.round(((product.price - product.discountPrice) / product.price) * 100) : 0;
     
@@ -248,7 +299,7 @@ const ProductCard = React.memo(({ product, index }) => {
     return (
         <div className="product-card-wrapper animate-fade-in" style={{ animationDelay: `${index * 50}ms`}}>
             <div onMouseMove={handleMouseMove} className="product-card bg-white/50 dark:bg-black/50 rounded-lg p-2 group relative border border-transparent dark:border-transparent hover:border-gray-200 dark:hover:border-gray-800 transition-colors duration-300">
-                <div onClick={() => setModalProduct(product)} className="relative overflow-hidden cursor-pointer rounded-md">
+                <div onClick={() => openProduct(product.id)} className="relative overflow-hidden cursor-pointer rounded-md">
                     <img src={product.imageUrl} alt={product.name} className="w-full h-64 sm:h-80 object-cover group-hover:scale-105 transition-transform duration-500" />
                     {onSale && <div className="absolute top-3 left-3 bg-black text-white text-xs font-semibold px-2 py-1 rounded-full z-10">{discountPercent}% OFF</div>}
                     <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent flex justify-end items-end h-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -270,66 +321,7 @@ const ProductCard = React.memo(({ product, index }) => {
 const SkeletonGrid = () => <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-x-6 sm:gap-y-10">{[...Array(10)].map((_, i) => <div key={i} className="animate-pulse"><div className="w-full h-64 sm:h-80 bg-gray-200 dark:bg-gray-800 rounded-lg"></div><div className="mt-3 h-4 w-3/4 bg-gray-200 dark:bg-gray-800 rounded"></div><div className="mt-2 h-4 w-1/4 bg-gray-200 dark:bg-gray-800 rounded"></div></div>)}</div>;
 const ProductGrid = ({ products }) => <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-x-6 sm:gap-y-10">{products.length > 0 ? products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />) : <p className="col-span-full text-center text-gray-500">No products found.</p>}</div>;
 
-const ProductModal = () => {
-    const { modalProduct, setModalProduct, addToCart, showToast, wishlist, toggleWishlist } = useContext(AppContext);
-    const [activeImg, setActiveImg] = useState(0);
-    const [selectedSize, setSelectedSize] = useState('');
-    const [selectedColor, setSelectedColor] = useState('');
-    
-    const isVisible = !!modalProduct;
 
-    useEffect(() => {
-        if (modalProduct) {
-            setActiveImg(0);
-            setSelectedSize(modalProduct.availableSizes[0]);
-            setSelectedColor(modalProduct.availableColors[0]);
-        }
-    }, [modalProduct]);
-
-    useEffect(() => {
-        const handleKeyDown = (event) => {
-            if (event.key === 'Escape') {
-                setModalProduct(null);
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [setModalProduct]);
-    
-    if (!modalProduct) return null;
-
-    const isWishlisted = wishlist.includes(modalProduct.id);
-    const onSale = modalProduct.discountPrice && new Date(modalProduct.saleEndDate) > new Date();
-
-    return (
-        <div onClick={() => setModalProduct(null)} className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-            <div className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}></div>
-            <div onClick={e => e.stopPropagation()} className={`bg-white dark:bg-black rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col md:flex-row transition-all duration-300 ease-in-out ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
-                <button onClick={() => setModalProduct(null)} className="absolute top-3 right-3 md:top-4 md:right-4 text-gray-500 dark:text-gray-400 z-10 hover:text-black dark:hover:text-white hover:scale-110 transition-transform"><CloseIcon /></button>
-                <div className="w-full md:w-1/2 p-4 md:p-6">
-                    <img src={modalProduct.gallery[activeImg] || modalProduct.imageUrl} className="w-full h-[50vh] md:h-auto md:max-h-[calc(90vh-3rem)] object-cover rounded-md mb-2"/>
-                    <div className="grid grid-cols-5 gap-2">
-                        {modalProduct.gallery.slice(0, 5).map((img, i) => <img key={i} src={img} onClick={() => setActiveImg(i)} alt={`${modalProduct.name} gallery image ${i+1}`} className={`w-full h-16 md:h-20 object-cover rounded-md cursor-pointer transition-all ${activeImg === i ? 'ring-2 ring-black dark:ring-white ring-offset-2 ring-offset-white dark:ring-offset-black' : 'opacity-60 hover:opacity-100'}`} />)}
-                    </div>
-                </div>
-                <div className="w-full md:w-1/2 p-4 md:p-6 flex flex-col">
-                    <h2 className="text-2xl font-bold">{modalProduct.name}</h2>
-                    <div className="flex items-center my-2"><Rating rating={modalProduct.reviews.reduce((a, r) => a + r.rating, 0) / (modalProduct.reviews.length || 1)} /><span className="ml-2 text-xs text-gray-500">{modalProduct.reviews.length} reviews</span></div>
-                    <div className="my-4 flex items-baseline gap-3"><p className={`text-2xl font-semibold ${onSale ? 'text-red-500' : ''}`}>₦{onSale ? modalProduct.discountPrice.toLocaleString() : modalProduct.price.toLocaleString()}</p>{onSale && <p className="text-lg line-through text-gray-400">₦{modalProduct.price.toLocaleString()}</p>}</div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 flex-grow mb-4">{modalProduct.description}</p>
-                    <div className="mt-auto">
-                        <div className="mt-6"><h4 className="font-semibold text-sm mb-2">Color</h4><div className="flex gap-2">{modalProduct.availableColors.map((c, i) => <button key={i} title={c} onClick={() => setSelectedColor(c)} className={`w-8 h-8 rounded-full cursor-pointer border-2 transition-all ${selectedColor === c ? 'border-black dark:border-white scale-110' : 'border-transparent'}`}><div className="w-full h-full rounded-full ring-1 ring-inset ring-gray-200 dark:ring-gray-800" style={{backgroundColor: c}}></div></button>)}</div></div>
-                        <div className="mt-4"><h4 className="font-semibold text-sm mb-2">Size</h4><div className="flex flex-wrap gap-2">{modalProduct.availableSizes.map((s, i) => <button key={i} onClick={() => setSelectedSize(s)} className={`border rounded-md px-3 py-1 text-sm transition-all duration-200 ${selectedSize === s ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : 'border-gray-300 dark:border-gray-700 hover:border-black dark:hover:border-white'}`}>{s}</button>)}</div></div>
-                        <div className="mt-6 flex gap-2 md:gap-4">
-                            <button onClick={() => {addToCart(modalProduct.id, {size: selectedSize, color: selectedColor}); showToast(`${modalProduct.name} added!`);}} className="flex-grow bg-black text-white dark:bg-white dark:text-black py-3 rounded-md font-semibold transition-transform hover:scale-[1.02]">Add to Cart</button>
-                            <button onClick={() => toggleWishlist(modalProduct.id)} className={`p-3 rounded-md border transition-all ${isWishlisted ? 'text-red-500 border-red-500 bg-red-500/10' : 'border-gray-300 dark:border-gray-700'}`}><WishlistIcon className="w-6 h-6"/></button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const CartSidebar = () => {
     const { isCartOpen, setIsCartOpen, cart, removeFromCart, updateCartQuantity } = useContext(AppContext);
@@ -450,20 +442,20 @@ const WishlistSidebar = () => {
 // --- PAGE COMPONENTS ---
 const FilterControls = () => {
     const { category, setCategory, sortBy, setSortBy } = useContext(AppContext);
-    const categories = ["all", "hats", "sneakers", "jackets", "womens", "mens"];
+    const categories = CATEGORIES;
     
     const gliderRef = useRef(null);
     const tabsRef = useRef([]);
 
     useEffect(() => {
-        const activeIndex = categories.findIndex(c => c === category);
+        const activeIndex = CATEGORIES.findIndex(c => c === category);
         const activeTab = tabsRef.current[activeIndex];
         if (activeTab && gliderRef.current) {
             gliderRef.current.style.width = `${activeTab.offsetWidth}px`;
             gliderRef.current.style.height = `${activeTab.offsetHeight}px`;
             gliderRef.current.style.left = `${activeTab.offsetLeft}px`;
         }
-    }, [category, categories]);
+    }, [category]);
 
     return (
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
@@ -602,8 +594,65 @@ const ShopPage = () => {
     );
 };
 
+const ProductPage = () => {
+    const { setCurrentProductId, ALL_PRODUCTS, addToCart, showToast, wishlist, toggleWishlist } = useContext(AppContext);
+    const { slug } = useParams();
+    const product = useMemo(() => ALL_PRODUCTS.find(p => p.slug === slug), [ALL_PRODUCTS, slug]);
+    const [activeImg, setActiveImg] = useState(0);
+    const [selectedSize, setSelectedSize] = useState('');
+    const [selectedColor, setSelectedColor] = useState('');
+
+
+    useEffect(() => {
+        if (!product) return;
+        setActiveImg(0);
+        setSelectedSize(product.availableSizes?.[0] || '');
+        setSelectedColor(product.availableColors?.[0] || '');
+    }, [product]);
+
+    if (!product) return <Navigate to="/shop" replace />;
+
+    const isWishlisted = wishlist.includes(product.id);
+    const onSale = product.discountPrice && new Date(product.saleEndDate) > new Date();
+
+    return (
+        <main className="container mx-auto px-4 sm:px-6 py-10">
+            <div className="mb-6">
+                <button onClick={() => { setCurrentProductId(null); navigator?.clipboard; window.history.back(); }} className="text-sm text-gray-600 dark:text-gray-300 hover:underline">← Back to shop</button>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                    <img src={product.gallery[activeImg] || product.imageUrl} className="w-full h-[60vh] object-cover rounded-md mb-4" />
+                    <div className="grid grid-cols-5 gap-2">
+                        {product.gallery.slice(0,5).map((img, i) => <img key={i} src={img} onClick={() => setActiveImg(i)} className={`w-full h-20 object-cover rounded-md cursor-pointer ${activeImg===i? 'ring-2 ring-black dark:ring-white' : 'opacity-60 hover:opacity-100'}`} alt={`${product.name} ${i+1}`} />)}
+                    </div>
+                </div>
+                <div>
+                    <h1 className="text-3xl font-bold">{product.name}</h1>
+                    <div className="flex items-center my-2"><Rating rating={product.reviews.reduce((a, r) => a + r.rating, 0) / (product.reviews.length || 1)} /><span className="ml-2 text-xs text-gray-500">{product.reviews.length} reviews</span></div>
+                    <div className="my-4 flex items-baseline gap-3"><p className={`text-2xl font-semibold ${onSale ? 'text-red-500' : ''}`}>₦{onSale ? product.discountPrice.toLocaleString() : product.price.toLocaleString()}</p>{onSale && <p className="text-lg line-through text-gray-400">₦{product.price.toLocaleString()}</p>}</div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{product.description}</p>
+
+                    <div className="mb-4"><h4 className="font-semibold text-sm mb-2">Color</h4><div className="flex gap-2">{product.availableColors.map((c, i) => <button key={i} title={c} onClick={() => setSelectedColor(c)} className={`w-8 h-8 rounded-full cursor-pointer border-2 transition-all ${selectedColor === c ? 'border-black dark:border-white scale-110' : 'border-transparent'}`}><div className="w-full h-full rounded-full ring-1 ring-inset ring-gray-200 dark:ring-gray-800" style={{backgroundColor: c}}></div></button>)}</div></div>
+                    <div className="mb-6"><h4 className="font-semibold text-sm mb-2">Size</h4><div className="flex flex-wrap gap-2">{product.availableSizes.map((s, i) => <button key={i} onClick={() => setSelectedSize(s)} className={`border rounded-md px-3 py-1 text-sm transition-all duration-200 ${selectedSize === s ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : 'border-gray-300 dark:border-gray-700 hover:border-black dark:hover:border-white'}`}>{s}</button>)}</div></div>
+
+                    <div className="flex gap-3">
+                        <button onClick={() => { addToCart(product.id, { size: selectedSize, color: selectedColor }); showToast(`${product.name} added!`); }} className="bg-black text-white py-3 px-6 rounded-md font-semibold">Add to Cart</button>
+                        <button onClick={() => toggleWishlist(product.id)} className={`p-3 rounded-md border transition-all ${isWishlisted ? 'text-red-500 border-red-500 bg-red-500/10' : 'border-gray-300 dark:border-gray-700'}`}><WishlistIcon className="w-6 h-6"/></button>
+                    </div>
+                    <div className="mt-8">
+                        <h3 className="font-semibold mb-2">Product Details</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{product.details || 'No additional details provided.'}</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    );
+};
+
 const HomePage = () => {
-  const { navigate, ALL_PRODUCTS, setCategory } = useContext(AppContext);
+    const { ALL_PRODUCTS, setCategory } = useContext(AppContext);
+    const routerNavigate = useNavigate();
   const featuredProducts = useMemo(() => ALL_PRODUCTS.filter(p => p.reviews.length > 1).slice(0, 4), [ALL_PRODUCTS]);
   const newArrivals = useMemo(() => [...ALL_PRODUCTS].sort((a,b) => b.id - a.id).slice(0, 5), [ALL_PRODUCTS]);
 
@@ -622,7 +671,7 @@ const HomePage = () => {
                 <p className="max-w-2xl mx-auto text-lg md:text-xl text-gray-200 mb-8">
                     Discover curated collections and timeless pieces to elevate your wardrobe.
                 </p>
-                <button onClick={() => navigate('shop')} className="bg-white text-black font-bold py-3 px-8 rounded-md hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 animate-fade-in flex items-center mx-auto" style={{animationDelay: '600ms'}}>
+                <button onClick={() => routerNavigate('/shop')} className="bg-white text-black font-bold py-3 px-8 rounded-md hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 animate-fade-in flex items-center mx-auto" style={{animationDelay: '600ms'}}>
                     Shop The Collection <ArrowRightIcon />
                 </button>
             </div>
@@ -633,22 +682,22 @@ const HomePage = () => {
         <div className="container mx-auto px-4 sm:px-6">
           <h2 className="text-3xl font-bold text-center mb-12">Shop by Category</h2>
            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              <div onClick={() => { navigate('shop'); setCategory('mens'); }} className="relative rounded-lg overflow-hidden group h-64 cursor-pointer">
+              <div onClick={() => { routerNavigate('/shop'); setCategory('mens'); }} className="relative rounded-lg overflow-hidden group h-64 cursor-pointer">
                   <img src="https://i.ibb.co/55z32tw/long-sleeve.png" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
                   <div className="absolute inset-0 bg-black/40"></div>
                   <h3 className="absolute bottom-4 left-4 text-white text-xl font-bold">Men's</h3>
               </div>
-              <div onClick={() => { navigate('shop'); setCategory('womens'); }} className="relative rounded-lg overflow-hidden group h-64 cursor-pointer">
+              <div onClick={() => { routerNavigate('/shop'); setCategory('womens'); }} className="relative rounded-lg overflow-hidden group h-64 cursor-pointer">
                   <img src="https://i.ibb.co/4W2DGKm/floral-blouse.png" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
                   <div className="absolute inset-0 bg-black/40"></div>
                   <h3 className="absolute bottom-4 left-4 text-white text-xl font-bold">Women's</h3>
               </div>
-              <div onClick={() => { navigate('shop'); setCategory('jackets'); }} className="relative rounded-lg overflow-hidden group h-64 cursor-pointer">
+              <div onClick={() => { routerNavigate('/shop'); setCategory('jackets'); }} className="relative rounded-lg overflow-hidden group h-64 cursor-pointer">
                   <img src="https://i.ibb.co/XzcwL5s/black-shearling.png" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
                   <div className="absolute inset-0 bg-black/40"></div>
                   <h3 className="absolute bottom-4 left-4 text-white text-xl font-bold">Jackets</h3>
               </div>
-               <div onClick={() => { navigate('shop'); setCategory('sneakers'); }} className="relative rounded-lg overflow-hidden group h-64 cursor-pointer">
+               <div onClick={() => { routerNavigate('/shop'); setCategory('sneakers'); }} className="relative rounded-lg overflow-hidden group h-64 cursor-pointer">
                   <img src="https://i.ibb.co/0s3pdnc/adidas-nmd.png" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
                   <div className="absolute inset-0 bg-black/40"></div>
                   <h3 className="absolute bottom-4 left-4 text-white text-xl font-bold">Footwear</h3>
@@ -844,32 +893,22 @@ export default function App() {
                 <CartSidebar />
                 <WishlistSidebar />
                 <Header />
-                <div className="flex-grow">
-                  <PageContent />
-                </div>
+                                <div className="flex-grow">
+                                    <Routes>
+                                        <Route path="/" element={<HomePage />} />
+                                        <Route path="/shop" element={<ShopPage />} />
+                                        <Route path="/product/:slug" element={<ProductPage />} />
+                                        <Route path="/about" element={<About />} />
+                                        <Route path="/contact" element={<Contact />} />
+                                        <Route path="/login" element={<Login />} />
+                                        <Route path="/signup" element={<Signup />} />
+                                        <Route path="*" element={<NotFound />} />
+                                    </Routes>
+                                </div>
                 <Footer />
-                <ProductModal />
             </div>
         </AppProvider>
     );
 }
 
-const PageContent = () => {
-  const { activePage } = useContext(AppContext);
-
-  switch (activePage) {
-    case 'shop':
-      return <ShopPage />;
-        case 'about':
-            return <About />;
-        case 'login':
-            return <Login />;
-        case 'signup':
-            return <Signup />;
-            case 'contact':
-                return <Contact />;
-    case 'home':
-    default:
-      return <HomePage />;
-  }
-};
+const PageContent = () => null;

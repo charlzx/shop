@@ -2,6 +2,18 @@
 // --- DATA & CONTEXT ---
 const getSaleEndDate = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
+// Deterministic 6-char base36 slug generator (alphanumeric)
+const makeSlug = (input) => {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < input.length; i++) {
+        h ^= input.charCodeAt(i);
+        h = Math.imul(h, 16777619) >>> 0;
+    }
+    let s = h.toString(36);
+    if (s.length < 6) s = s.padStart(6, '0');
+    return s.slice(0,6);
+}
+
 export const Products = [{
         id: 1,
         name: "Brown Brim",
@@ -660,4 +672,12 @@ export const Products = [{
         gallery: ["https://i.ibb.co/mJS6vz0/blue-jean-jacket.png"],
         reviews: [{ rating: 5, user: "Rose" }]
     },
-   ]
+    ];
+
+// Attach slugs to each product deterministically (based on id + name) so
+// they are stable across restarts and can be referenced directly from the data file.
+for (const p of Products) {
+     if (!p.slug) p.slug = makeSlug(`${p.id}-${p.name}`);
+}
+
+export default Products;

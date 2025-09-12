@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { AppContext } from './App.jsx';
+import { AppContext } from './AppContext.js';
 
 const Signup = () => {
   const { showToast, navigate } = useContext(AppContext);
