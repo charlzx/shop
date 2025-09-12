@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import SEO from './SEO.jsx';
 import { AppContext } from './AppContext.js';
 
 const Login = () => {
@@ -32,6 +33,8 @@ const Login = () => {
   };
 
   return (
+    <>
+      <SEO title={`Login — CRWN3`} description={`Sign in to your CRWN3 account to view orders, manage your wishlist, and checkout faster.`} url={typeof window !== 'undefined' ? window.location.href : undefined} />
     <main className="container mx-auto px-4 sm:px-6 py-16 max-w-md">
       <h1 className="text-3xl font-bold mb-4">Sign in to your account</h1>
       <form onSubmit={handleLogin} className="space-y-4">
@@ -63,6 +66,7 @@ const Login = () => {
         </form>
       )}
     </main>
+    </>
   );
 };
 

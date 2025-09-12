@@ -1,8 +1,11 @@
 import React from 'react';
+import SEO from './SEO.jsx';
 
 const About = () => {
   return (
-    <main className="container mx-auto px-4 sm:px-6 py-16">
+    <>
+      <SEO title={`About — CRWN3`} description={`Learn about CRWN3 Collective — our story, mission, and commitment to quality.`} url={typeof window !== 'undefined' ? window.location.href : undefined} />
+      <main className="container mx-auto px-4 sm:px-6 py-16">
       <section className="max-w-4xl mx-auto text-center">
         <h1 className="text-4xl md:text-5xl font-extrabold mb-4">About CRWN3</h1>
         <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">CRWN3 is a collective making thoughtfully designed, durable apparel — built to last and loved for years.</p>
@@ -43,6 +46,7 @@ const About = () => {
       </section>
 
     </main>
+    </>
   );
 };
 

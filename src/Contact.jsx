@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from './AppContext.js';
+import SEO from './SEO.jsx';
 
 const Contact = () => {
   const { showToast, navigate } = useContext(AppContext);
@@ -33,7 +34,9 @@ const Contact = () => {
   };
 
   return (
-    <main className="container mx-auto px-4 sm:px-6 py-16 max-w-3xl">
+    <>
+      <SEO title={`Contact — CRWN3`} description={`Get in touch with CRWN3 Collective for support, partnerships, or press inquiries.`} url={typeof window !== 'undefined' ? window.location.href : undefined} />
+      <main className="container mx-auto px-4 sm:px-6 py-16 max-w-3xl">
       <h1 className="text-3xl font-bold mb-4">Contact us</h1>
       <p className="text-gray-600 dark:text-gray-300 mb-6">Have a question about an order, product, or collaboration? Send us a message and we'll get back to you within 1-2 business days.</p>
 
@@ -72,9 +75,10 @@ const Contact = () => {
           <h4 className="font-semibold">Press</h4>
           <p className="text-sm text-gray-500">press@crwn3.example</p>
         </div>
-      </section>
-    </main>
-  );
+  </section>
+  </main>
+      </>
+    );
 };
 
 export default Contact;

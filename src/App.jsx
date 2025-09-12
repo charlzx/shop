@@ -28,6 +28,7 @@ const ALL_PRODUCTS = Products.map(p => {
 });
 
 import { AppContext } from './AppContext.js';
+import SEO from './SEO.jsx';
 
 const CATEGORIES = ["all", "hats", "sneakers", "jackets", "womens", "mens"];
 
@@ -543,6 +544,9 @@ const Pagination = ({ totalItems, itemsPerPage, currentPage, onPageChange }) => 
 
 const ShopPage = () => {
     const { isLoading, searchTerm, sortBy, category, currentPage, setCurrentPage } = useContext(AppContext);
+    // page meta
+    const shopTitle = 'Shop — CRWN3';
+    const shopDescription = 'Browse CRWN3 collections: hats, sneakers, jackets, and essentials.';
     const ITEMS_PER_PAGE = 20;
 
     const onSale = (product) => {
@@ -575,7 +579,9 @@ const ShopPage = () => {
     }, [currentPage, filteredAndSortedProducts]);
 
     return (
-      <main className="container mx-auto px-4 sm:px-6 py-10">
+            <>
+                <SEO title={shopTitle} description={shopDescription} url={typeof window !== 'undefined' ? window.location.href : undefined} />
+                <main className="container mx-auto px-4 sm:px-6 py-10">
         <FilterControls />
         {isLoading ? (
           <SkeletonGrid /> 
@@ -591,6 +597,7 @@ const ShopPage = () => {
           </>
         )}
       </main>
+            </>
     );
 };
 
@@ -616,7 +623,29 @@ const ProductPage = () => {
     const onSale = product.discountPrice && new Date(product.saleEndDate) > new Date();
 
     return (
-        <main className="container mx-auto px-4 sm:px-6 py-10">
+        <>
+            <SEO
+                title={`${product.name} — CRWN3`}
+                description={product.description}
+                image={product.gallery?.[0] || product.imageUrl}
+                url={typeof window !== 'undefined' ? window.location.href : undefined}
+                type="product"
+                jsonLd={{
+                    "@context": "https://schema.org/",
+                    "@type": "Product",
+                    "name": product.name,
+                    "image": product.gallery || [product.imageUrl],
+                    "description": product.description,
+                    "sku": product.slug || String(product.id),
+                    "offers": {
+                        "@type": "Offer",
+                        "priceCurrency": "NGN",
+                        "price": product.discountPrice || product.price,
+                        "availability": "https://schema.org/InStock"
+                    }
+                }}
+            />
+            <main className="container mx-auto px-4 sm:px-6 py-10">
             <div className="mb-6">
                 <button onClick={() => { setCurrentProductId(null); navigator?.clipboard; window.history.back(); }} className="text-sm text-gray-600 dark:text-gray-300 hover:underline">← Back to shop</button>
             </div>
@@ -647,17 +676,22 @@ const ProductPage = () => {
                 </div>
             </div>
         </main>
+        </>
     );
 };
 
 const HomePage = () => {
     const { ALL_PRODUCTS, setCategory } = useContext(AppContext);
     const routerNavigate = useNavigate();
+    const homeTitle = 'CRWN3 — Curated Apparel & Accessories';
+    const homeDescription = 'Timeless pieces and modern essentials to elevate your wardrobe. Discover curated collections at CRWN3.';
   const featuredProducts = useMemo(() => ALL_PRODUCTS.filter(p => p.reviews.length > 1).slice(0, 4), [ALL_PRODUCTS]);
   const newArrivals = useMemo(() => [...ALL_PRODUCTS].sort((a,b) => b.id - a.id).slice(0, 5), [ALL_PRODUCTS]);
 
   return (
-    <main>
+        <>
+            <SEO title={homeTitle} description={homeDescription} url={typeof window !== 'undefined' ? window.location.href : undefined} />
+            <main>
       {/* Hero Section */}
         <div 
             className="relative h-[50vh] min-h-[300px] md:h-[60vh] bg-cover bg-center flex items-center justify-center text-center text-white px-4"
@@ -756,8 +790,9 @@ const HomePage = () => {
           <span className="font-serif font-bold text-3xl">InStyle</span>
         </div>
       </section>
-    </main>
-  );
+        </main>
+        </>
+    );
 };
 
 const Footer = () => {
