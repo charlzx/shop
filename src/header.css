@@ -33,3 +33,52 @@
   .nav-links { display: none; }
   .mobile-logo-center { justify-content: center; }
 }
+
+/* Improve header spacing between 768px and 1023px */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .header-inner { padding-left: 8px; padding-right: 8px; }
+  .nav-links a { padding: 4px 8px; }
+  .search-bar-desktop input { width: 160px; }
+  /* hide desktop search on smaller tablets to free up space */
+  .search-bar-desktop { display: none; }
+  .site-header .header-inner { flex-wrap: wrap; row-gap: 6px; }
+  .site-header .header-inner .brand { flex: 1 1 100%; text-align: left; }
+}
+
+/* compact search overlay for md screens (768-1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .md-search-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 64px;
+    z-index: 60;
+    pointer-events: auto;
+  }
+  .md-search-overlay .panel {
+    width: calc(100% - 40px);
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    background: var(--bg, #fff);
+  }
+  .md-search-overlay .panel input { width: 100%; }
+}
+
+/* Very small screen cart adjustments to prevent horizontal overflow */
+@media (max-width: 400px) {
+  .cart-page .container { padding-left: 8px; padding-right: 8px; }
+  .cart-page img { width: 56px !important; height: 56px !important; }
+  .cart-page .flex { gap: 8px !important; }
+  .cart-page h3 { font-size: 14px; }
+  .cart-page aside { padding: 12px; }
+  .cart-page .grid { grid-template-columns: 1fr !important; }
+  .search-bar-desktop { display: none; }
+}

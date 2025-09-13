@@ -201,10 +201,11 @@ const ToastContainer = () => {
 };
 
 const Header = () => {
-    const { theme, setTheme, cart, wishlist, setSearchTerm, setIsCartOpen, setIsWishlistOpen } = useContext(AppContext);
+    const { theme, setTheme, cart, wishlist, searchTerm, setSearchTerm, setIsCartOpen, setIsWishlistOpen } = useContext(AppContext);
     const navigate = useNavigate();
     const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
 
     useEffect(() => {
         if (isMenuOpen) {
@@ -270,15 +271,21 @@ const Header = () => {
                         <button onClick={() => setIsMenuOpen(true)} className="p-2 rounded-md text-gray-500 dark:text-gray-400 md:hidden"><MenuIcon /></button>
                         <a href="#" onClick={(e) => handleNav(e, '/')} className="brand text-lg text-black dark:text-white">▲ CRWN3</a>
                     </div>
-                    <nav className="nav-links hidden md:flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                    <nav className="nav-links hidden md:flex items-center gap-2 lg:gap-4 text-sm text-gray-600 dark:text-gray-400">
                             <NavLink to="/shop" className={({isActive}) => `hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isActive ? 'font-bold' : ''}`}>Shop</NavLink>
                         <NavLink to="/about" className={({isActive}) => `hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isActive ? 'font-bold' : ''}`}>About</NavLink>
                         <NavLink to="/contact" className={({isActive}) => `hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isActive ? 'font-bold' : ''}`}>Contact</NavLink>
                     </nav>
                     <div className="flex items-center gap-3">
-                        <div className="hidden sm:block search-bar-desktop">
-                            <input type="text" onChange={e => { setSearchTerm(e.target.value); navigate('/shop'); }} placeholder="Search products..." className="w-56 pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400"/>
-                        </div>
+                                                <div className="hidden lg:block search-bar-desktop">
+                                                        <input type="text" onChange={e => { setSearchTerm(e.target.value); navigate('/shop'); }} placeholder="Search products..." className="w-40 md:w-56 lg:w-64 pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400"/>
+                                                </div>
+                                                {/* compact search icon visible only between 768px and 1023px */}
+                                                <div className="hidden md:block lg:hidden">
+                                                    <button onClick={() => setIsSearchOpen(s => !s)} className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/50">
+                                                        <SearchIcon />
+                                                    </button>
+                                                </div>
 
                         {/* Icons: theme, wishlist, cart */}
                         <div className="flex items-center gap-2">
@@ -304,6 +311,24 @@ const Header = () => {
                     </div>
                 </div>
             </header>
+                        {/* search overlay for md screens */}
+                        {isSearchOpen && (
+                                <div onClick={() => setIsSearchOpen(false)} className="fixed inset-0 z-40 flex items-start justify-center pt-20">
+                                    <div className="w-full max-w-md px-4">
+                                        <div onClick={e => e.stopPropagation()} className="bg-white dark:bg-black p-3 rounded-md shadow-lg">
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                value={searchTerm || ''}
+                                                onChange={e => { setSearchTerm(e.target.value); }}
+                                                onKeyDown={e => { if (e.key === 'Enter') { navigate('/shop'); setIsSearchOpen(false); } }}
+                                                placeholder="Search products..."
+                                                className="w-full pl-3 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-transparent focus:outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                        )}
             <MobileMenu />
         </>
     );
@@ -325,7 +350,7 @@ const ProductCard = React.memo(({ product, index }) => {
         <div className="product-card-wrapper animate-fade-in" style={{ animationDelay: `${index * 50}ms`}}>
             <div onMouseMove={handleMouseMove} className="product-card bg-white/50 dark:bg-black/50 rounded-lg p-2 group relative border border-transparent dark:border-transparent hover:border-gray-200 dark:hover:border-gray-800 transition-colors duration-300">
                 <div onClick={() => openProduct(product.id)} className="relative overflow-hidden cursor-pointer rounded-md">
-                    <img src={product.imageUrl} alt={product.name} className="w-full h-64 sm:h-80 object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img src={product.imageUrl} alt={product.name} className="w-full h-48 sm:h-64 md:h-72 lg:h-80 object-cover group-hover:scale-105 transition-transform duration-500" />
                     {onSale && <div className="absolute top-3 left-3 bg-black text-white text-xs font-semibold px-2 py-1 rounded-full z-10">{discountPercent}% OFF</div>}
                     <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent flex justify-end items-end h-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div className="bg-white text-black py-2 px-4 rounded-md text-sm font-semibold transition-transform transform-gpu group-hover:translate-y-0 translate-y-4 duration-300">Add to Cart</div>
