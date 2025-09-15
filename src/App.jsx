@@ -9,6 +9,11 @@ import Contact from './Contact.jsx';
 import CartPage from './Cart.jsx';
 import Checkout from './Checkout.jsx';
 import WishlistPage from './Wishlist.jsx';
+import FAQ from './FAQ.jsx';
+import Shipping from './Shipping.jsx';
+import SizeGuide from './SizeGuide.jsx';
+import Privacy from './Privacy.jsx';
+import Terms from './Terms.jsx';
 import NotFound from './NotFound.jsx';
 
 // --- ICONS ---
@@ -298,8 +303,9 @@ const Header = () => {
                     </nav>
                     <div className="flex items-center gap-3">
                                                 <div className="hidden lg:block search-bar-desktop">
-                                                        <input type="text" onChange={e => { setSearchTerm(e.target.value); navigate('/shop'); }} placeholder="Search products..." className="w-40 md:w-56 lg:w-64 pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400"/>
-                                                </div>
+                                                                                {/* Local desktop query buffers input until Enter */}
+                                                                                <DesktopSearchInput onNavigate={(q) => { setSearchTerm(q); navigate('/shop'); }} onFocus={() => { navigate('/shop'); }} />
+                                                                        </div>
                                                 {/* compact search icon visible only between 768px and 1023px */}
                                                 <div className="hidden md:block lg:hidden">
                                                     <button onClick={() => setIsSearchOpen(s => !s)} className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/50">
@@ -351,6 +357,22 @@ const Header = () => {
                         )}
             <MobileMenu />
         </>
+    );
+};
+
+// Desktop search input that buffers keystrokes locally and only updates global search when user presses Enter
+const DesktopSearchInput = ({ onNavigate = () => {}, onFocus = () => {} }) => {
+    const [q, setQ] = useState('');
+    return (
+        <input
+            type="text"
+            value={q}
+            onFocus={() => { onFocus(); }}
+            onChange={e => setQ(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { onNavigate(q); } }}
+            placeholder="Search products..."
+            className="w-40 md:w-56 lg:w-64 pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400"
+        />
     );
 };
 
@@ -779,7 +801,7 @@ const HomePage = () => {
             <main>
       {/* Hero Section */}
         <div 
-            className="relative h-[50vh] min-h-[300px] md:h-[60vh] bg-cover bg-center flex items-center justify-center text-center text-white px-4"
+            className="relative h-[70vh] min-h-[420px] md:h-[80vh] lg:h-[90vh] bg-cover bg-center flex items-center justify-center text-center text-white px-4"
             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1601924994987-69e26d50dc26?q=80&w=2874&auto=format&fit=crop')" }}
         >
             <div className="absolute inset-0 bg-black/40"></div>
@@ -881,7 +903,7 @@ const HomePage = () => {
 };
 
 const Footer = () => {
-    const { navigate } = useContext(AppContext);
+    const { navigate, setCategory } = useContext(AppContext);
     return (
         <footer className="bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
             <div className="container mx-auto px-4 sm:px-6 py-12">
@@ -893,19 +915,21 @@ const Footer = () => {
                     <div>
                         <h3 className="font-semibold text-sm tracking-wider uppercase">Shop</h3>
                         <ul className="mt-4 space-y-2 text-gray-500 dark:text-gray-400">
-                            <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('shop'); }} className="hover:text-black dark:hover:text-white">Men</a></li>
-                            <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('shop'); }} className="hover:text-black dark:hover:text-white">Women</a></li>
-                            <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('shop'); }} className="hover:text-black dark:hover:text-white">Accessories</a></li>
-                            <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('shop'); }} className="hover:text-black dark:hover:text-white">New Arrivals</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); setCategory('mens'); navigate('/shop'); }} className="hover:text-black dark:hover:text-white">Men</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); setCategory('womens'); navigate('/shop'); }} className="hover:text-black dark:hover:text-white">Women</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); setCategory('hats'); navigate('/shop'); }} className="hover:text-black dark:hover:text-white">Hats</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); setCategory('sneakers'); navigate('/shop'); }} className="hover:text-black dark:hover:text-white">Sneakers</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); setCategory('jackets'); navigate('/shop'); }} className="hover:text-black dark:hover:text-white">Jackets</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); setCategory('all'); navigate('/shop'); }} className="hover:text-black dark:hover:text-white">New Arrivals</a></li>
                         </ul>
                     </div>
                     <div>
                         <h3 className="font-semibold text-sm tracking-wider uppercase">Support</h3>
                         <ul className="mt-4 space-y-2 text-gray-500 dark:text-gray-400">
-                            <li><a href="#" className="hover:text-black dark:hover:text-white">Contact Us</a></li>
-                            <li><a href="#" className="hover:text-black dark:hover:text-white">FAQ</a></li>
-                            <li><a href="#" className="hover:text-black dark:hover:text-white">Shipping & Returns</a></li>
-                            <li><a href="#" className="hover:text-black dark:hover:text-white">Size Guide</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('/contact'); }} className="hover:text-black dark:hover:text-white">Contact Us</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('/faq'); }} className="hover:text-black dark:hover:text-white">FAQ</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('/shipping'); }} className="hover:text-black dark:hover:text-white">Shipping & Returns</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('/size-guide'); }} className="hover:text-black dark:hover:text-white">Size Guide</a></li>
                         </ul>
                     </div>
                      <div className="col-span-full md:col-span-2 lg:col-span-2">
@@ -917,8 +941,8 @@ const Footer = () => {
                 <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400">
                     <p>&copy; {new Date().getFullYear()} CRWN3 Collective. All Rights Reserved.</p>
                     <div className="flex space-x-4 mt-4 sm:mt-0">
-                        <a href="#" className="hover:text-black dark:hover:text-white">Privacy Policy</a>
-                        <a href="#" className="hover:text-black dark:hover:text-white">Terms of Service</a>
+                        <a href="#" onClick={(e) => { e.preventDefault(); navigate('/privacy'); }} className="hover:text-black dark:hover:text-white">Privacy Policy</a>
+                        <a href="#" onClick={(e) => { e.preventDefault(); navigate('/terms'); }} className="hover:text-black dark:hover:text-white">Terms of Service</a>
                     </div>
                 </div>
             </div>
@@ -1022,6 +1046,11 @@ export default function App() {
                                         <Route path="/about" element={<About />} />
                                         <Route path="/contact" element={<Contact />} />
                                         <Route path="/cart" element={<CartPage />} />
+                                        <Route path="/faq" element={<FAQ />} />
+                                        <Route path="/shipping" element={<Shipping />} />
+                                        <Route path="/size-guide" element={<SizeGuide />} />
+                                        <Route path="/privacy" element={<Privacy />} />
+                                        <Route path="/terms" element={<Terms />} />
                                         <Route path="/wishlist" element={<WishlistPage />} />
                                         <Route path="/checkout" element={<Checkout />} />
                                         <Route path="/login" element={<Login />} />

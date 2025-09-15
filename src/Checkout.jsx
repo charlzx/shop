@@ -14,6 +14,12 @@ const Checkout = () => {
   const [state, setState] = useState('');
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Payment fields
+  const [cardName, setCardName] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardBrand, setCardBrand] = useState('');
 
   const subtotal = useMemo(() => cart.reduce((s, item) => {
     const price = item.discountPrice && new Date(item.saleEndDate) > new Date() ? item.discountPrice : item.price;
@@ -35,6 +41,19 @@ const Checkout = () => {
     if (!firstName || !lastName || !phone || !street || !city || !state) {
       setMsg({ type: 'error', text: 'Please fill out required address fields' });
       return;
+    }
+    // basic card validation when cart has items
+    if (cart.length > 0) {
+      if (!cardName || !cardNumber || !cardExpiry || !cardCvv) {
+        setMsg({ type: 'error', text: 'Please fill out your card details' });
+        return;
+      }
+      // basic card number digits check
+      const digits = cardNumber.replace(/\s+/g, '');
+      if (!/^\d{12,19}$/.test(digits)) {
+        setMsg({ type: 'error', text: 'Please enter a valid card number' });
+        return;
+      }
     }
     setLoading(true);
     setTimeout(() => {
@@ -158,6 +177,34 @@ const Checkout = () => {
 
             <aside className="p-4 bg-white dark:bg-black rounded border border-gray-100 dark:border-gray-800">
               <h3 className="font-semibold mb-2">Order summary</h3>
+              {/* Payment form summary */}
+              <div className="mt-4 mb-4">
+                <h4 className="font-semibold text-sm mb-2">Payment</h4>
+                <div className="space-y-2">
+                  <label className="block">
+                    <span className="text-sm text-gray-600 dark:text-gray-300">Cardholder name</span>
+                    <input value={cardName} onChange={e => setCardName(e.target.value)} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" placeholder="Name on card" />
+                  </label>
+                  <label className="block">
+                    <span className="text-sm text-gray-600 dark:text-gray-300">Card number</span>
+                    <div className="flex items-center gap-2">
+                      <input value={cardNumber} onChange={e => { const v = e.target.value.replace(/[^0-9 ]/g, ''); setCardNumber(v); const brand = detectCardBrand(v); setCardBrand(brand); }} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" placeholder="1234 5678 9012 3456" />
+                      <div className="w-20 text-right text-sm text-gray-500">{cardBrand}</div>
+                    </div>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block">
+                      <span className="text-sm text-gray-600 dark:text-gray-300">Expiry (MM/YY)</span>
+                      <input value={cardExpiry} onChange={e => setCardExpiry(e.target.value)} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" placeholder="MM/YY" />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm text-gray-600 dark:text-gray-300">CVV</span>
+                      <input value={cardCvv} onChange={e => setCardCvv(e.target.value)} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" placeholder="123" />
+                    </label>
+                  </div>
+                  {/* Accepted card icons removed per UX request */}
+                </div>
+              </div>
               <div className="space-y-2">
                 {cart.map(item => (
                   <div key={item.cartItemId} className="flex justify-between text-sm">
@@ -188,3 +235,13 @@ const Checkout = () => {
 };
 
 export default Checkout;
+
+// Simple card brand detection based on prefix
+function detectCardBrand(value) {
+  const v = (value || '').replace(/\s+/g, '');
+  if (/^4/.test(v)) return 'Visa';
+  if (/^(5[1-5]|2[2-7])/.test(v)) return 'Mastercard';
+  if (/^506(0|1|2)/.test(v) || /^5078/.test(v) || /^650/.test(v)) return 'Verve';
+  if (/^6/.test(v)) return 'Afrigo';
+  return '';
+}
