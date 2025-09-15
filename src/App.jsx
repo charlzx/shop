@@ -8,6 +8,7 @@ import Signup from './Signup.jsx';
 import Contact from './Contact.jsx';
 import CartPage from './Cart.jsx';
 import Checkout from './Checkout.jsx';
+import WishlistPage from './Wishlist.jsx';
 import NotFound from './NotFound.jsx';
 
 // --- ICONS ---
@@ -51,7 +52,9 @@ const AppProvider = ({ children }) => {
     const [category, setCategory] = useState('all');
     const [isLoading, setIsLoading] = useState(true);
     const [currentProductId, setCurrentProductId] = useState(null);
-    const [toasts, setToasts] = useState([]);
+    // Toasts removed in favor of inline feedback; keep a no-op for compatibility
+    // (components should use inline messages instead)
+    const [/* toasts */, /* setToasts */] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isWishlistOpen, setIsWishlistOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -95,10 +98,12 @@ const AppProvider = ({ children }) => {
     useEffect(() => { localStorage.setItem('cart', JSON.stringify(cart)); }, [cart]);
     useEffect(() => { localStorage.setItem('wishlist', JSON.stringify(wishlist)); }, [wishlist]);
 
+    // kept for compatibility but no longer shows global toasts
     const showToast = useCallback((message, type = 'success') => {
-        const id = Date.now();
-        setToasts(prev => [...prev, { id, message, type }]);
-        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+        // console debug so devs can see notifications in devtools if needed
+        // Prefer components to show inline messages instead of toasts.
+        // eslint-disable-next-line no-console
+        console.debug('[notification]', type, message);
     }, []);
 
     const addToCart = useCallback((productId, options = { size: 'M', color: '#000000' }) => {
@@ -141,16 +146,17 @@ const AppProvider = ({ children }) => {
         const removeCoupon = useCallback(() => setAppliedCoupon(null), []);
 
     const toggleWishlist = useCallback((productId) => {
-        const product = ALL_PRODUCTS.find(p => p.id === productId);
+        let added = false;
         setWishlist(currentWishlist => {
             if (currentWishlist.includes(productId)) {
-                showToast(`${product.name} removed from wishlist`, 'error');
+                added = false;
                 return currentWishlist.filter(id => id !== productId);
             }
-            showToast(`${product.name} added to wishlist!`);
+            added = true;
             return [...currentWishlist, productId];
         });
-    }, [showToast]);
+        return added;
+    }, []);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -189,15 +195,29 @@ const AppProvider = ({ children }) => {
             }
         }
 
-    const value = { theme, setTheme, cart, addToCart, removeFromCart, updateCartQuantity, clearCart, appliedCoupon, applyCoupon, removeCoupon, COUPON_DEFINITIONS, wishlist, toggleWishlist, searchTerm, setSearchTerm, sortBy, setSortBy, category, setCategory, isLoading, currentProductId, setCurrentProductId, openProduct, toasts, showToast, isCartOpen, setIsCartOpen, isWishlistOpen, setIsWishlistOpen, currentPage, setCurrentPage, ALL_PRODUCTS, navigate };
+    const value = { theme, setTheme, cart, addToCart, removeFromCart, updateCartQuantity, clearCart, appliedCoupon, applyCoupon, removeCoupon, COUPON_DEFINITIONS, wishlist, toggleWishlist, searchTerm, setSearchTerm, sortBy, setSortBy, category, setCategory, isLoading, currentProductId, setCurrentProductId, openProduct, showToast, isCartOpen, setIsCartOpen, isWishlistOpen, setIsWishlistOpen, currentPage, setCurrentPage, ALL_PRODUCTS, navigate };
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
 // --- UI COMPONENTS ---
 const Rating = React.memo(({ rating }) => <div className="flex">{[...Array(5)].map((_, i) => <StarIcon key={i} className={`w-4 h-4 ${i < Math.round(rating) ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} />)}</div>);
-const ToastContainer = () => {
-    const { toasts } = useContext(AppContext);
-    return <div className="fixed top-5 right-5 z-[100] space-y-2">{toasts.map(toast => <div key={toast.id} className={`toast-in-out toast ${toast.type === 'success' ? 'bg-black' : 'bg-red-600'} text-white px-4 py-2 rounded-md shadow-lg`}>{toast.message}</div>)}</div>;
+// Small animated badge that 'pops' when the count increases
+const CountBadge = ({ count, className = '' }) => {
+    const prev = useRef(count);
+    const [animate, setAnimate] = useState(false);
+
+    useEffect(() => {
+        if (count > prev.current) {
+            setAnimate(true);
+            const t = setTimeout(() => setAnimate(false), 450);
+            return () => clearTimeout(t);
+        }
+        prev.current = count;
+    }, [count]);
+
+    return (
+        <span className={`absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center transform transition-transform ${animate ? 'scale-125 shadow-md' : 'scale-100'} ${className}`}>{count}</span>
+    );
 };
 
 const Header = () => {
@@ -295,12 +315,12 @@ const Header = () => {
 
                             <button onClick={() => setIsWishlistOpen(true)} title="Wishlist" aria-label="Open wishlist" className="relative p-2 rounded-md hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors">
                                 <WishlistIcon className={`w-6 h-6 ${wishlist.length > 0 ? 'text-red-500 fill-red-500' : 'text-gray-500 dark:text-gray-400'}`} />
-                                <span className={`absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center ${wishlist.length > 0 ? 'scale-100' : 'scale-0'}`}>{wishlist.length}</span>
+                                {wishlist.length > 0 && <CountBadge count={wishlist.length} />}
                             </button>
 
                             <button onClick={() => setIsCartOpen(true)} title="Cart" aria-label="Open cart" className="relative p-2 rounded-md hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors">
                                 <CartIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                                <span className={`absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center ${cartCount > 0 ? 'scale-100' : 'scale-0'}`}>{cartCount}</span>
+                                {cartCount > 0 && <CountBadge count={cartCount} />}
                             </button>
                         </div>
 
@@ -437,8 +457,9 @@ const CartSidebar = () => {
     );
 };
 
-const WishlistSidebar = () => {
-    const { isWishlistOpen, setIsWishlistOpen, wishlist, toggleWishlist, addToCart, ALL_PRODUCTS, showToast } = useContext(AppContext);
+    const WishlistSidebar = () => {
+    const { isWishlistOpen, setIsWishlistOpen, wishlist, toggleWishlist, addToCart, ALL_PRODUCTS, openProduct } = useContext(AppContext);
+    const navigate = useNavigate();
     
     const wishlistedProducts = useMemo(() => {
         return ALL_PRODUCTS.filter(p => wishlist.includes(p.id));
@@ -446,7 +467,8 @@ const WishlistSidebar = () => {
 
     const handleAddToCart = (product) => {
         addToCart(product.id);
-        showToast(`${product.name} added to cart!`);
+        // local visual feedback could be implemented per-item; for now we close the wishlist to show cart updated
+        setIsWishlistOpen(false);
     };
 
     return (
@@ -455,7 +477,10 @@ const WishlistSidebar = () => {
             <div className={`absolute right-0 top-0 h-full w-full max-w-md bg-white dark:bg-black shadow-2xl flex flex-col transition-transform duration-500 ease-in-out ${isWishlistOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-800">
                     <h2 className="text-xl font-semibold">My Wishlist</h2>
-                    <button onClick={() => setIsWishlistOpen(false)} className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"><CloseIcon /></button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => { setIsWishlistOpen(false); navigate('/wishlist'); }} className="text-sm text-gray-500 hover:underline">View wishlist</button>
+                        <button onClick={() => setIsWishlistOpen(false)} className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"><CloseIcon /></button>
+                    </div>
                 </div>
                 {wishlistedProducts.length === 0 ? (
                     <div className="flex-grow flex flex-col items-center justify-center text-center p-6">
@@ -467,13 +492,17 @@ const WishlistSidebar = () => {
                     <div className="flex-grow overflow-y-auto p-4 space-y-4">
                         {wishlistedProducts.map(item => (
                             <div key={item.id} className="flex gap-4 items-center">
-                                <img src={item.imageUrl} alt={item.name} className="w-24 h-24 object-cover rounded-md" />
+                                <button onClick={() => { openProduct(item.id); setIsWishlistOpen(false); }} className="p-0 border-0 bg-transparent cursor-pointer">
+                                    <img src={item.imageUrl} alt={item.name} className="w-24 h-24 object-cover rounded-md" />
+                                </button>
                                 <div className="flex-grow">
-                                    <h3 className="font-semibold text-sm">{item.name}</h3>
+                                    <h3 className="font-semibold text-sm">
+                                        <button onClick={() => { openProduct(item.id); setIsWishlistOpen(false); }} className="text-left p-0 border-0 bg-transparent cursor-pointer hover:underline">{item.name}</button>
+                                    </h3>
                                     <p className="font-semibold text-sm mt-1">₦{(item.discountPrice && new Date(item.saleEndDate) > new Date() ? item.discountPrice : item.price).toLocaleString()}</p>
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                     <button onClick={() => handleAddToCart(item)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="Add to Cart">
+                                                 <button onClick={() => handleAddToCart(item)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="Add to Cart">
                                         <CartIcon className="w-5 h-5" />
                                      </button>
                                      <button onClick={() => toggleWishlist(item.id)} className="p-2 bg-red-100/50 dark:bg-red-900/50 text-red-500 rounded-md hover:bg-red-100 dark:hover:bg-red-900 transition-colors" title="Remove from Wishlist">
@@ -652,7 +681,7 @@ const ShopPage = () => {
 };
 
 const ProductPage = () => {
-    const { setCurrentProductId, ALL_PRODUCTS, addToCart, showToast, wishlist, toggleWishlist } = useContext(AppContext);
+    const { setCurrentProductId, ALL_PRODUCTS, addToCart, wishlist, toggleWishlist } = useContext(AppContext);
     const { slug } = useParams();
     const product = useMemo(() => ALL_PRODUCTS.find(p => p.slug === slug), [ALL_PRODUCTS, slug]);
     const [activeImg, setActiveImg] = useState(0);
@@ -671,6 +700,9 @@ const ProductPage = () => {
 
     const isWishlisted = wishlist.includes(product.id);
     const onSale = product.discountPrice && new Date(product.saleEndDate) > new Date();
+
+    const [added, setAdded] = useState(false);
+    const [wishMsg, setWishMsg] = useState(null);
 
     return (
         <>
@@ -716,9 +748,12 @@ const ProductPage = () => {
                     <div className="mb-6"><h4 className="font-semibold text-sm mb-2">Size</h4><div className="flex flex-wrap gap-2">{product.availableSizes.map((s, i) => <button key={i} onClick={() => setSelectedSize(s)} className={`border rounded-md px-3 py-1 text-sm transition-all duration-200 ${selectedSize === s ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : 'border-gray-300 dark:border-gray-700 hover:border-black dark:hover:border-white'}`}>{s}</button>)}</div></div>
 
                     <div className="flex gap-3">
-                        <button onClick={() => { addToCart(product.id, { size: selectedSize, color: selectedColor }); showToast(`${product.name} added!`); }} className="bg-black text-white py-3 px-6 rounded-md font-semibold">Add to Cart</button>
-                        <button onClick={() => toggleWishlist(product.id)} className={`p-3 rounded-md border transition-all ${isWishlisted ? 'text-red-500 border-red-500 bg-red-500/10' : 'border-gray-300 dark:border-gray-700'}`}><WishlistIcon className="w-6 h-6"/></button>
+                        <button onClick={() => { addToCart(product.id, { size: selectedSize, color: selectedColor }); setAdded(true); setTimeout(() => setAdded(false), 1000); }} disabled={added} className="bg-black text-white py-3 px-6 rounded-md font-semibold">
+                            {added ? 'Added ✓' : 'Add to Cart'}
+                        </button>
+                        <button onClick={() => { const added = toggleWishlist(product.id); setWishMsg(added ? { type: 'success', text: 'Added to wishlist' } : { type: 'error', text: 'Removed from wishlist' }); setTimeout(() => setWishMsg(null), 1400); }} className={`p-3 rounded-md border transition-all ${isWishlisted ? 'text-red-500 border-red-500 bg-red-500/10' : 'border-gray-300 dark:border-gray-700'}`}><WishlistIcon className="w-6 h-6"/></button>
                     </div>
+                    {wishMsg && <div className={`mt-2 text-sm ${wishMsg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{wishMsg.text}</div>}
                     <div className="mt-8">
                         <h3 className="font-semibold mb-2">Product Details</h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">{product.details || 'No additional details provided.'}</p>
@@ -892,25 +927,27 @@ const Footer = () => {
 };
 
 const FooterSubscribe = () => {
-    const { showToast } = useContext(AppContext);
     const [email, setEmail] = React.useState('');
+    const [msg, setMsg] = React.useState(null);
 
     const handleSubscribe = () => {
         const re = /^\S+@\S+\.\S+$/;
         if (!re.test(email)) {
-            showToast('Please enter a valid email address', 'error');
+            setMsg({ type: 'error', text: 'Please enter a valid email address' });
             return;
         }
-        showToast('Thanks for subscribing!');
+        setMsg({ type: 'success', text: 'Thanks for subscribing!' });
         setEmail('');
+        setTimeout(() => setMsg(null), 2500);
     };
 
     return (
         <div className="mt-4">
             <div className="flex max-w-md">
-                <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Enter your email" className="flex-grow px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-l-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600"/>
+                <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Enter your email" className="flex-grow px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-l-md bg-transparent focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600" />
                 <button onClick={handleSubscribe} className="bg-black text-white dark:bg-white dark:text-black px-4 rounded-r-md font-semibold text-sm">Sign Up</button>
             </div>
+            {msg && <div className={`mt-2 text-sm ${msg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{msg.text}</div>}
         </div>
     );
 };
@@ -974,7 +1011,6 @@ export default function App() {
             `}</style>
             <div className="bg-white dark:bg-black text-black dark:text-white min-h-screen font-sans flex flex-col">
                 <Background />
-                <ToastContainer />
                 <CartSidebar />
                 <WishlistSidebar />
                 <Header />
@@ -986,6 +1022,7 @@ export default function App() {
                                         <Route path="/about" element={<About />} />
                                         <Route path="/contact" element={<Contact />} />
                                         <Route path="/cart" element={<CartPage />} />
+                                        <Route path="/wishlist" element={<WishlistPage />} />
                                         <Route path="/checkout" element={<Checkout />} />
                                         <Route path="/login" element={<Login />} />
                                         <Route path="/signup" element={<Signup />} />

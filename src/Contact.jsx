@@ -3,21 +3,22 @@ import { AppContext } from './AppContext.js';
 import SEO from './SEO.jsx';
 
 const Contact = () => {
-  const { showToast, navigate } = useContext(AppContext);
+  const { navigate } = useContext(AppContext);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !message.trim()) {
-      showToast('Please fill out all fields', 'error');
+      setMsg({ type: 'error', text: 'Please fill out all fields' });
       return;
     }
     const re = /^\S+@\S+\.\S+$/;
     if (!re.test(email)) {
-      showToast('Please enter a valid email address', 'error');
+      setMsg({ type: 'error', text: 'Please enter a valid email address' });
       return;
     }
 
@@ -25,11 +26,11 @@ const Contact = () => {
     // Simulate async send
     setTimeout(() => {
       setLoading(false);
-      showToast('Thanks — your message has been sent!');
+      setMsg({ type: 'success', text: 'Thanks — your message has been sent!' });
       setName('');
       setEmail('');
       setMessage('');
-      navigate('home');
+      setTimeout(() => navigate('home'), 900);
     }, 900);
   };
 
@@ -60,6 +61,7 @@ const Contact = () => {
           </button>
           <div className="text-sm text-gray-500 dark:text-gray-400">Or email us at <a href="mailto:hello@crwn3.example" className="underline">hello@crwn3.example</a></div>
         </div>
+        {msg && <div className={`mt-2 text-sm ${msg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{msg.text}</div>}
       </form>
 
       <section className="mt-10 grid sm:grid-cols-3 gap-4">

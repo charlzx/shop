@@ -3,7 +3,7 @@ import { AppContext } from './AppContext.js';
 import SEO from './SEO.jsx';
 
 const Checkout = () => {
-  const { cart, showToast, clearCart, navigate, appliedCoupon, removeCoupon } = useContext(AppContext);
+  const { cart, clearCart, navigate, appliedCoupon, removeCoupon } = useContext(AppContext);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -28,13 +28,18 @@ const Checkout = () => {
 
   const total = useMemo(() => Math.max(0, subtotal + shippingFee), [subtotal, shippingFee]);
 
+  const [msg, setMsg] = useState(null);
+
   const placeOrder = (e) => {
     e && e.preventDefault();
-    if (!firstName || !lastName || !phone || !street || !city || !state) return showToast('Please fill out required address fields', 'error');
+    if (!firstName || !lastName || !phone || !street || !city || !state) {
+      setMsg({ type: 'error', text: 'Please fill out required address fields' });
+      return;
+    }
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      showToast('Order placed — thank you!');
+      setMsg({ type: 'success', text: 'Order placed — thank you!' });
       // clear cart and coupon so next order requires re-entry
       clearCart();
       removeCoupon();
@@ -144,10 +149,11 @@ const Checkout = () => {
                   </select>
                 </label>
               </div>
-              <div className="flex gap-2">
+                <div className="flex gap-2">
                 <button type="submit" disabled={loading} className="bg-black text-white dark:bg-white dark:text-black px-4 py-2 rounded-md">{loading ? 'Placing...' : 'Place order'}</button>
                 <button type="button" onClick={() => navigate('/cart')} className="px-4 py-2 border rounded-md">Back to cart</button>
               </div>
+              {msg && <div className={`mt-2 text-sm ${msg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{msg.text}</div>}
             </form>
 
             <aside className="p-4 bg-white dark:bg-black rounded border border-gray-100 dark:border-gray-800">
@@ -168,7 +174,7 @@ const Checkout = () => {
                   <div className="mt-3 text-sm">
                     <div className="flex items-center justify-between">
                       <div>Coupon: <span className="font-medium">{appliedCoupon}</span></div>
-                      <button onClick={() => { removeCoupon(); showToast('Coupon removed'); }} className="text-sm text-gray-500 hover:underline">Remove coupon</button>
+                      <button onClick={() => { removeCoupon(); setMsg({ type: 'success', text: 'Coupon removed' }); setTimeout(() => setMsg(null), 2000); }} className="text-sm text-gray-500 hover:underline">Remove coupon</button>
                     </div>
                   </div>
                 )}

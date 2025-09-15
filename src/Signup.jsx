@@ -3,23 +3,24 @@ import { AppContext } from './AppContext.js';
 import SEO from './SEO.jsx';
 
 const Signup = () => {
-  const { showToast, navigate } = useContext(AppContext);
+  const { navigate } = useContext(AppContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [msg, setMsg] = useState(null);
 
   const handleSignup = (e) => {
     e.preventDefault();
     if (!email || !password) {
-      showToast('Please fill out all fields', 'error');
+      setMsg({ type: 'error', text: 'Please fill out all fields' });
       return;
     }
     if (password !== confirm) {
-      showToast('Passwords do not match', 'error');
+      setMsg({ type: 'error', text: 'Passwords do not match' });
       return;
     }
-    showToast('Account created!');
-    navigate('home');
+    setMsg({ type: 'success', text: 'Account created!' });
+    setTimeout(() => navigate('home'), 700);
   };
 
   // Google sign-up currently disabled
@@ -61,6 +62,7 @@ const Signup = () => {
           <button type="submit" className="bg-black text-white dark:bg-white dark:text-black py-2 px-4 rounded-md font-semibold">Create account</button>
           <a href="#" onClick={(e) => { e.preventDefault(); navigate('login'); }} className="text-sm text-gray-500 hover:underline">Already have an account?</a>
         </div>
+        {msg && <div className={`mt-2 text-sm ${msg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{msg.text}</div>}
       </form>
 
       {/* Google sign-up is currently disabled; duplicate bottom button removed */}
