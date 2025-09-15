@@ -3,21 +3,22 @@ import SEO from './SEO.jsx';
 import { AppContext } from './AppContext.js';
 
 const Login = () => {
-  const { showToast, navigate } = useContext(AppContext);
+  const { navigate } = useContext(AppContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showReset, setShowReset] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [msg, setMsg] = useState(null);
 
   const handleLogin = (e) => {
     e.preventDefault();
     if (!email || !password) {
-      showToast('Please enter email and password', 'error');
+      setMsg({ type: 'error', text: 'Please enter email and password' });
       return;
     }
     // Simulate success
-    showToast('Logged in successfully');
-    navigate('home');
+    setMsg({ type: 'success', text: 'Logged in successfully' });
+    setTimeout(() => navigate('home'), 700);
   };
 
   // Google sign-in currently disabled
@@ -26,10 +27,10 @@ const Login = () => {
     e.preventDefault();
     const re = /^\S+@\S+\.\S+$/;
     if (!re.test(resetEmail)) {
-      showToast('Please enter a valid email address', 'error');
+      setMsg({ type: 'error', text: 'Please enter a valid email address' });
       return;
     }
-    showToast('If this email exists, a reset link has been sent.');
+    setMsg({ type: 'success', text: 'If this email exists, a reset link has been sent.' });
     setShowReset(false);
     setResetEmail('');
   };
@@ -58,11 +59,11 @@ const Login = () => {
       <form onSubmit={handleLogin} className="space-y-4">
         <label className="block">
           <span className="text-sm text-gray-600 dark:text-gray-300">Email</span>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input type="email" value={email} onChange={e => { setEmail(e.target.value); setMsg(null); }} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400" />
         </label>
         <label className="block">
           <span className="text-sm text-gray-600 dark:text-gray-300">Password</span>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input type="password" value={password} onChange={e => { setPassword(e.target.value); setMsg(null); }} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400" />
         </label>
         <div className="flex items-center justify-between">
           <button type="submit" className="bg-black text-white dark:bg-white dark:text-black py-2 px-4 rounded-md font-semibold">Sign in</button>
@@ -71,6 +72,7 @@ const Login = () => {
             <a href="#" onClick={(e) => { e.preventDefault(); navigate('signup'); }} className="text-sm text-gray-500 hover:underline">Create an account</a>
           </div>
         </div>
+        {msg && <div className={`mt-2 text-sm ${msg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{msg.text}</div>}
       </form>
 
       {/* Google sign-in is currently disabled; duplicate bottom button removed */}
@@ -80,9 +82,10 @@ const Login = () => {
           <h3 className="font-semibold mb-2">Reset your password</h3>
           <p className="text-sm text-gray-500 mb-3">Enter your email and we'll send a password reset link.</p>
           <div className="flex gap-2">
-            <input type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="Email address" className="flex-grow px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+            <input type="email" value={resetEmail} onChange={e => { setResetEmail(e.target.value); setMsg(null); }} placeholder="Email address" className="flex-grow px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400" />
             <button type="submit" className="bg-black text-white dark:bg-white dark:text-black px-4 rounded-md font-semibold">Send</button>
           </div>
+          {msg && <div className={`mt-2 text-sm ${msg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{msg.text}</div>}
         </form>
       )}
     </main>

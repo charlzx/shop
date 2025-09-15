@@ -3,8 +3,9 @@ import { AppContext } from './AppContext.js';
 import SEO from './SEO.jsx';
 
 const CartPage = () => {
-  const { cart, removeFromCart, updateCartQuantity, showToast, navigate, appliedCoupon, applyCoupon, removeCoupon, COUPON_DEFINITIONS } = useContext(AppContext);
+  const { cart, removeFromCart, updateCartQuantity, navigate, appliedCoupon, applyCoupon, removeCoupon, COUPON_DEFINITIONS } = useContext(AppContext);
   const [coupon, setCoupon] = useState('');
+  const [msg, setMsg] = useState(null);
 
   const subtotal = useMemo(() => cart.reduce((sum, item) => {
     const price = item.discountPrice && new Date(item.saleEndDate) > new Date() ? item.discountPrice : item.price;
@@ -24,16 +25,25 @@ const CartPage = () => {
   const handleApply = (e) => {
     e && e.preventDefault();
     const code = (coupon || '').toUpperCase().trim();
-    if (!code) return showToast('Enter a coupon code', 'error');
+    if (!code) {
+      setMsg({ type: 'error', text: 'Enter a coupon code' });
+      return;
+    }
     const ok = applyCoupon(code);
-    if (!ok) return showToast('Invalid coupon code', 'error');
-    showToast(`${COUPON_DEFINITIONS[code].description} applied!`);
+    if (!ok) {
+      setMsg({ type: 'error', text: 'Invalid coupon code' });
+      return;
+    }
+    setMsg({ type: 'success', text: `${COUPON_DEFINITIONS[code].description} applied!` });
+    setCoupon('');
+    setTimeout(() => setMsg(null), 2500);
   };
 
   const handleRemoveCoupon = () => {
     removeCoupon();
     setCoupon('');
-    showToast('Coupon removed');
+    setMsg({ type: 'success', text: 'Coupon removed' });
+    setTimeout(() => setMsg(null), 2000);
   };
 
   return (
@@ -97,6 +107,7 @@ const CartPage = () => {
                     <input value={coupon} onChange={e => setCoupon(e.target.value)} placeholder="Enter coupon code" className="flex-1 px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" />
                     <button className="bg-black text-white dark:bg-white dark:text-black px-4 rounded-md">Apply</button>
                   </div>
+                  {msg && <div className={`mt-2 text-sm ${msg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{msg.text}</div>}
                 </form>
               )}
 
