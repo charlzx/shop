@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useContext } from 'react';
+import { Link } from 'react-router-dom';
 import { AppContext } from './AppContext.js';
 import SEO from './SEO.jsx';
 
@@ -63,10 +64,12 @@ const CartPage = () => {
             <div className="space-y-4">
               {cart.map(item => (
                 <div key={item.cartItemId} className="flex flex-col sm:flex-row gap-3 bg-white dark:bg-black p-2 sm:p-4 rounded-md border border-gray-100 dark:border-gray-800 min-w-0">
-                  <img src={item.imageUrl} alt={item.name} className="flex-shrink-0 w-12 h-12 sm:w-20 sm:h-20 md:w-24 md:h-24 object-cover rounded-md" />
+                  <Link to={`/product/${item.slug}`} className="flex-shrink-0 p-0 border-0 bg-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white">
+                    <img src={item.imageUrl} alt={item.name} className="w-12 h-12 sm:w-20 sm:h-20 md:w-24 md:h-24 object-cover rounded-md" />
+                  </Link>
                   <div className="flex-1 flex flex-col min-w-0">
                     <div className="flex justify-between">
-                      <h3 className="font-semibold truncate">{item.name}</h3>
+                      <Link to={`/product/${item.slug}`} className="text-left p-0 border-0 bg-transparent font-semibold truncate hover:underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white">{item.name}</Link>
                       <button onClick={() => removeFromCart(item.cartItemId)} className="text-sm text-red-500">Remove</button>
                     </div>
                     <p className="text-xs text-gray-500 truncate">{item.options.size} / <span className="inline-block w-3 h-3 rounded-full" style={{backgroundColor: item.options.color}}></span></p>
@@ -103,13 +106,16 @@ const CartPage = () => {
               ) : (
                 <form onSubmit={handleApply} className="mb-4">
                   <label className="text-sm text-gray-600 dark:text-gray-300 block mb-2">Have a coupon?</label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 coupon-row">
                     <input value={coupon} onChange={e => setCoupon(e.target.value)} placeholder="Enter coupon code" className="flex-1 px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" />
-                    <button className="bg-black text-white dark:bg-white dark:text-black px-4 rounded-md">Apply</button>
+                    <button type="submit" className="bg-black text-white dark:bg-white dark:text-black px-4 py-2 rounded-md font-semibold transition-colors hover:opacity-90">Apply</button>
                   </div>
                   {msg && <div className={`mt-2 text-sm ${msg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{msg.text}</div>}
                 </form>
               )}
+
+              {/* Receipt-style dashed divider */}
+              <div aria-hidden="true" className="my-4 border-t border-dashed border-gray-200 dark:border-gray-700" />
 
               <div className="flex justify-between font-semibold text-lg mb-4">
                 <span>Total</span>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useContext, useRef } from 'react';
 import { Link, NavLink, useNavigate, useParams, Routes, Route, Navigate } from 'react-router-dom';
 import './header.css';
+import './App.css';
 import { Products } from './data/products';
 import About from './About.jsx';
 import Login from './Login.jsx';
@@ -15,6 +16,8 @@ import SizeGuide from './SizeGuide.jsx';
 import Privacy from './Privacy.jsx';
 import Terms from './Terms.jsx';
 import NotFound from './NotFound.jsx';
+import OrdersPage from './Orders.jsx';
+import OrderDetail from './OrderDetail.jsx';
 
 // --- ICONS ---
 const SunIcon = () => <svg height="20" width="20" stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>;
@@ -391,15 +394,17 @@ const ProductCard = React.memo(({ product, index }) => {
     return (
         <div className="product-card-wrapper animate-fade-in" style={{ animationDelay: `${index * 50}ms`}}>
             <div onMouseMove={handleMouseMove} className="product-card bg-white/50 dark:bg-black/50 rounded-lg p-2 group relative border border-transparent dark:border-transparent hover:border-gray-200 dark:hover:border-gray-800 transition-colors duration-300">
-                <div onClick={() => openProduct(product.id)} className="relative overflow-hidden cursor-pointer rounded-md">
+                <Link to={`/product/${product.slug}`} onClick={() => openProduct(product.id)} className="relative overflow-hidden rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white">
                     <img src={product.imageUrl} alt={product.name} className="w-full h-48 sm:h-64 md:h-72 lg:h-80 object-cover group-hover:scale-105 transition-transform duration-500" />
                     {onSale && <div className="absolute top-3 left-3 bg-black text-white text-xs font-semibold px-2 py-1 rounded-full z-10">{discountPercent}% OFF</div>}
                     <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent flex justify-end items-end h-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div className="bg-white text-black py-2 px-4 rounded-md text-sm font-semibold transition-transform transform-gpu group-hover:translate-y-0 translate-y-4 duration-300">Add to Cart</div>
                     </div>
-                </div>
+                </Link>
                 <div className="pt-3">
-                    <h3 className="text-sm font-semibold text-black dark:text-white pr-2 truncate">{product.name}</h3>
+                    <h3 className="text-sm font-semibold text-black dark:text-white pr-2 truncate">
+                        <Link to={`/product/${product.slug}`} onClick={() => openProduct(product.id)} className="hover:underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white">{product.name}</Link>
+                    </h3>
                     <div className="mt-1 flex items-baseline gap-2">
                         <p className={`text-sm font-semibold ${onSale ? 'text-red-500' : 'text-black dark:text-white'}`}>₦{onSale ? product.discountPrice.toLocaleString() : product.price.toLocaleString()}</p>
                         {onSale && <p className="text-xs line-through text-gray-400 dark:text-gray-500">₦{product.price.toLocaleString()}</p>}
@@ -441,10 +446,14 @@ const CartSidebar = () => {
                     <div className="flex-grow overflow-y-auto p-4 space-y-4">
                         {cart.map(item => (
                             <div key={item.cartItemId} className="flex gap-4">
-                                <img src={item.imageUrl} alt={item.name} className="w-24 h-24 object-cover rounded-md" />
+                                <Link to={`/product/${item.slug}`} onClick={() => setIsCartOpen(false)} className="p-0 border-0 bg-transparent">
+                                    <img src={item.imageUrl} alt={item.name} className="w-24 h-24 object-cover rounded-md" />
+                                </Link>
                                 <div className="flex-grow flex flex-col">
                                     <div className="flex justify-between">
-                                        <h3 className="font-semibold text-sm">{item.name}</h3>
+                                            <h3 className="font-semibold text-sm">
+                                            <Link to={`/product/${item.slug}`} onClick={() => setIsCartOpen(false)} className="text-left p-0 border-0 bg-transparent hover:underline">{item.name}</Link>
+                                        </h3>
                                         <button onClick={() => removeFromCart(item.cartItemId)} className="text-gray-400 hover:text-red-500 transition-colors"><TrashIcon /></button>
                                     </div>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -514,12 +523,12 @@ const CartSidebar = () => {
                     <div className="flex-grow overflow-y-auto p-4 space-y-4">
                         {wishlistedProducts.map(item => (
                             <div key={item.id} className="flex gap-4 items-center">
-                                <button onClick={() => { openProduct(item.id); setIsWishlistOpen(false); }} className="p-0 border-0 bg-transparent cursor-pointer">
+                                <Link to={`/product/${item.slug}`} onClick={() => setIsWishlistOpen(false)} className="p-0 border-0 bg-transparent">
                                     <img src={item.imageUrl} alt={item.name} className="w-24 h-24 object-cover rounded-md" />
-                                </button>
+                                </Link>
                                 <div className="flex-grow">
-                                    <h3 className="font-semibold text-sm">
-                                        <button onClick={() => { openProduct(item.id); setIsWishlistOpen(false); }} className="text-left p-0 border-0 bg-transparent cursor-pointer hover:underline">{item.name}</button>
+                                        <h3 className="font-semibold text-sm">
+                                        <Link to={`/product/${item.slug}`} onClick={() => setIsWishlistOpen(false)} className="text-left p-0 border-0 bg-transparent hover:underline">{item.name}</Link>
                                     </h3>
                                     <p className="font-semibold text-sm mt-1">₦{(item.discountPrice && new Date(item.saleEndDate) > new Date() ? item.discountPrice : item.price).toLocaleString()}</p>
                                 </div>
@@ -930,6 +939,7 @@ const Footer = () => {
                             <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('/faq'); }} className="hover:text-black dark:hover:text-white">FAQ</a></li>
                             <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('/shipping'); }} className="hover:text-black dark:hover:text-white">Shipping & Returns</a></li>
                             <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('/size-guide'); }} className="hover:text-black dark:hover:text-white">Size Guide</a></li>
+                            <li><a href="#" onClick={(e) => { e.preventDefault(); navigate('/orders'); }} className="hover:text-black dark:hover:text-white">Orders</a></li>
                         </ul>
                     </div>
                      <div className="col-span-full md:col-span-2 lg:col-span-2">
@@ -1053,6 +1063,8 @@ export default function App() {
                                         <Route path="/terms" element={<Terms />} />
                                         <Route path="/wishlist" element={<WishlistPage />} />
                                         <Route path="/checkout" element={<Checkout />} />
+                                        <Route path="/orders" element={<OrdersPage />} />
+                                        <Route path="/orders/:id" element={<OrderDetail />} />
                                         <Route path="/login" element={<Login />} />
                                         <Route path="/signup" element={<Signup />} />
                                         <Route path="*" element={<NotFound />} />

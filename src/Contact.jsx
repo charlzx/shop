@@ -55,11 +55,11 @@ const Contact = () => {
           <textarea value={message} onChange={e => setMessage(e.target.value)} rows={6} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400" />
         </label>
 
-        <div className="flex items-center justify-between">
-          <button type="submit" disabled={loading} className="bg-black text-white dark:bg-white dark:text-black py-2 px-4 rounded-md font-semibold">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <button type="submit" disabled={loading} className="bg-black text-white dark:bg-white dark:text-black py-2 px-4 rounded-md font-semibold w-full sm:w-auto">
             {loading ? 'Sending...' : 'Send message'}
           </button>
-          <div className="text-sm text-gray-500 dark:text-gray-400">Or email us at <a href="mailto:hello@crwn3.example" className="underline">hello@crwn3.example</a></div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 text-center sm:text-right">Or email us at <a href="mailto:hello@crwn3.example" className="underline">hello@crwn3.example</a></div>
         </div>
         {msg && <div className={`mt-2 text-sm ${msg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{msg.text}</div>}
       </form>

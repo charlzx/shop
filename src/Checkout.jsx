@@ -21,6 +21,43 @@ const Checkout = () => {
   const [cardCvv, setCardCvv] = useState('');
   const [cardBrand, setCardBrand] = useState('');
 
+  // Input helpers: keep formatted values
+  const formatPhone = (v) => {
+    // allow leading + then digits only
+    const cleaned = v.replace(/[^0-9+]/g, '');
+    if (cleaned.startsWith('+')) return '+' + cleaned.slice(1).replace(/\+/g, '');
+    return cleaned.replace(/\+/g, '');
+  };
+
+  const formatCardNumber = (v) => {
+    // allow only digits and spaces, group into 4s
+    const digits = v.replace(/[^0-9]/g, '');
+    return digits.replace(/(.{4})/g, '$1 ').trim();
+  };
+
+  // Max card digits and computed input max length (includes spaces)
+  const CARD_DIGITS_MAX = 19;
+  const CARD_INPUT_MAX_LENGTH = CARD_DIGITS_MAX + Math.ceil(CARD_DIGITS_MAX / 4) - 1; // e.g. 19 digits + 4 spaces = 23
+
+  const formatExpiry = (v) => {
+    const digits = v.replace(/[^0-9]/g, '');
+    if (digits.length === 0) return '';
+    // clamp month to 01-12 when two digits present
+    if (digits.length <= 2) {
+      const mm = parseInt(digits.slice(0, 2), 10);
+      if (!isNaN(mm)) {
+        if (mm === 0) return '01';
+        if (mm > 12) return '12';
+        return digits;
+      }
+      return digits;
+    }
+    const mmDigits = digits.slice(0, 2);
+    const mm = parseInt(mmDigits, 10);
+    const mmStr = (!isNaN(mm) ? (mm === 0 ? '01' : (mm > 12 ? '12' : (mm < 10 ? '0' + mm : '' + mm))) : mmDigits);
+    return mmStr + '/' + digits.slice(2, 4);
+  };
+
   const subtotal = useMemo(() => cart.reduce((s, item) => {
     const price = item.discountPrice && new Date(item.saleEndDate) > new Date() ? item.discountPrice : item.price;
     return s + price * item.quantity;
@@ -48,10 +85,36 @@ const Checkout = () => {
         setMsg({ type: 'error', text: 'Please fill out your card details' });
         return;
       }
-      // basic card number digits check
+      // card number digits check
       const digits = cardNumber.replace(/\s+/g, '');
       if (!/^\d{12,19}$/.test(digits)) {
-        setMsg({ type: 'error', text: 'Please enter a valid card number' });
+        setMsg({ type: 'error', text: 'Please enter a valid card number (12-19 digits)' });
+        return;
+      }
+        // expiry format MM/YY and basic ranges + not expired
+        if (!/^\d{2}\/\d{2}$/.test(cardExpiry)) {
+          setMsg({ type: 'error', text: 'Expiry must be in MM/YY format' });
+          return;
+        }
+        const [mmStr, yyStr] = cardExpiry.split('/');
+        const mm = parseInt(mmStr, 10);
+        const yy = parseInt(yyStr, 10);
+        if (isNaN(mm) || isNaN(yy) || mm < 1 || mm > 12) {
+          setMsg({ type: 'error', text: 'Expiry month must be between 01 and 12' });
+          return;
+        }
+        // convert two-digit year to full year (assume 2000-2099)
+        const expiryYear = 2000 + yy;
+        const now = new Date();
+        const nowYear = now.getFullYear();
+        const nowMonth = now.getMonth() + 1; // 1-12
+        if (expiryYear < nowYear || (expiryYear === nowYear && mm < nowMonth)) {
+          setMsg({ type: 'error', text: `Card has expired (must be ${String(nowMonth).padStart(2,'0')}/${String(nowYear).slice(2)} or later)` });
+          return;
+        }
+      // cvv 3 or 4 digits
+      if (!/^\d{3,4}$/.test(cardCvv)) {
+        setMsg({ type: 'error', text: 'CVV must be 3 or 4 digits' });
         return;
       }
     }
@@ -60,6 +123,32 @@ const Checkout = () => {
       setLoading(false);
       setMsg({ type: 'success', text: 'Order placed — thank you!' });
       // clear cart and coupon so next order requires re-entry
+      // Build order object and persist to localStorage
+      const orderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+      const trackingId = `TRK-${Math.floor(100000 + Math.random() * 900000)}`;
+      const placedAt = new Date();
+      const orderObj = {
+        id: orderId,
+        trackingId,
+        date: placedAt.toISOString().slice(0,10),
+        time: placedAt.toTimeString().slice(0,5),
+        status: 'Processing',
+        total: total,
+        items: cart.map(i => ({ id: i.id, name: i.name, qty: i.quantity, price: (i.discountPrice && new Date(i.saleEndDate) > new Date() ? i.discountPrice : i.price) })),
+        shippingAddress: { firstName, lastName, phone, street, apartment, landmark, city, state },
+        // small simulated location trail for tracking visual
+        trackingPath: [
+          { lat: 9.0765, lon: 7.3986, label: 'Warehouse', when: placedAt.toISOString() },
+          { lat: 9.0765 + 0.2, lon: 7.3986 + 0.05, label: 'Sorting Hub', when: new Date(placedAt.getTime() + 1000*60*60).toISOString() }
+        ]
+      };
+      try {
+        const existing = JSON.parse(localStorage.getItem('orders') || '[]');
+        existing.unshift(orderObj);
+        localStorage.setItem('orders', JSON.stringify(existing));
+      } catch (err) {
+        console.error('Failed to persist order', err);
+      }
       clearCart();
       removeCoupon();
       // mark order placed, but stay on checkout so user can see confirmation
@@ -80,13 +169,16 @@ const Checkout = () => {
           <div className="p-8 bg-green-50 dark:bg-green-900/20 rounded">
             <h2 className="text-xl font-semibold">Thanks — your order is confirmed</h2>
             <p className="text-sm text-gray-600 mt-2">We've received your order. If you need to place another order, your cart has been cleared and coupons removed. </p>
-            <div className="mt-4">
+            <div className="mt-4 flex gap-2">
               <button onClick={() => { setOrderPlaced(false); }} className="px-4 py-2 border rounded-md">Place another order</button>
+              <button onClick={() => navigate('/orders')} className="px-4 py-2 bg-black text-white rounded-md">View orders</button>
+              <button onClick={() => navigate('/')} className="px-4 py-2 border rounded-md">Home</button>
+              <button onClick={() => navigate('/shop' )} className="px-4 py-2 border rounded-md">Continue shopping</button>
             </div>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
-            <form onSubmit={placeOrder} className="space-y-4">
+            <form onSubmit={placeOrder} className="space-y-4 order-2 md:order-1">
               <div className="grid grid-cols-2 gap-4">
                 <label className="block">
                   <span className="text-sm text-gray-600 dark:text-gray-300">First name</span>
@@ -100,7 +192,7 @@ const Checkout = () => {
 
               <label className="block">
                 <span className="text-sm text-gray-600 dark:text-gray-300">Phone number</span>
-                <input value={phone} onChange={e => setPhone(e.target.value)} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" />
+                <input value={phone} onChange={e => setPhone(formatPhone(e.target.value))} inputMode="tel" placeholder="e.g. +2348012345678" className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" />
               </label>
 
               <label className="block">
@@ -119,7 +211,7 @@ const Checkout = () => {
                 </label>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 city-state-row">
                 <label className="block">
                   <span className="text-sm text-gray-600 dark:text-gray-300">City</span>
                   <input value={city} onChange={e => setCity(e.target.value)} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" />
@@ -168,16 +260,7 @@ const Checkout = () => {
                   </select>
                 </label>
               </div>
-                <div className="flex gap-2">
-                <button type="submit" disabled={loading} className="bg-black text-white dark:bg-white dark:text-black px-4 py-2 rounded-md">{loading ? 'Placing...' : 'Place order'}</button>
-                <button type="button" onClick={() => navigate('/cart')} className="px-4 py-2 border rounded-md">Back to cart</button>
-              </div>
-              {msg && <div className={`mt-2 text-sm ${msg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{msg.text}</div>}
-            </form>
-
-            <aside className="p-4 bg-white dark:bg-black rounded border border-gray-100 dark:border-gray-800">
-              <h3 className="font-semibold mb-2">Order summary</h3>
-              {/* Payment form summary */}
+              {/* Payment inputs — moved into main form so they're submitted with the order */}
               <div className="mt-4 mb-4">
                 <h4 className="font-semibold text-sm mb-2">Payment</h4>
                 <div className="space-y-2">
@@ -188,23 +271,34 @@ const Checkout = () => {
                   <label className="block">
                     <span className="text-sm text-gray-600 dark:text-gray-300">Card number</span>
                     <div className="flex items-center gap-2">
-                      <input value={cardNumber} onChange={e => { const v = e.target.value.replace(/[^0-9 ]/g, ''); setCardNumber(v); const brand = detectCardBrand(v); setCardBrand(brand); }} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" placeholder="1234 5678 9012 3456" />
+                      <input value={cardNumber} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ''); const limited = raw.slice(0, CARD_DIGITS_MAX); const v = formatCardNumber(limited); setCardNumber(v); const brand = detectCardBrand(limited); setCardBrand(brand); }} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" placeholder="1234 5678 9012 3456" inputMode="numeric" maxLength={CARD_INPUT_MAX_LENGTH} />
                       <div className="w-20 text-right text-sm text-gray-500">{cardBrand}</div>
                     </div>
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <label className="block">
                       <span className="text-sm text-gray-600 dark:text-gray-300">Expiry (MM/YY)</span>
-                      <input value={cardExpiry} onChange={e => setCardExpiry(e.target.value)} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" placeholder="MM/YY" />
+                      <input value={cardExpiry} onChange={e => setCardExpiry(formatExpiry(e.target.value))} maxLength={5} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" placeholder="MM/YY" inputMode="numeric" />
                     </label>
                     <label className="block">
                       <span className="text-sm text-gray-600 dark:text-gray-300">CVV</span>
-                      <input value={cardCvv} onChange={e => setCardCvv(e.target.value)} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" placeholder="123" />
+                      <input value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/[^0-9]/g, '').slice(0,4))} maxLength={4} className="mt-1 block w-full px-3 py-2 border rounded-md bg-transparent border-gray-200 dark:border-gray-700 focus:outline-none" placeholder="123" inputMode="numeric" />
                     </label>
                   </div>
-                  {/* Accepted card icons removed per UX request */}
                 </div>
               </div>
+
+              <div className="flex gap-2">
+                <button type="submit" disabled={loading} className="bg-black text-white dark:bg-white dark:text-black px-4 py-2 rounded-md">{loading ? 'Placing...' : 'Place order'}</button>
+                <button type="button" onClick={() => navigate('/cart')} className="px-4 py-2 border rounded-md">Back to cart</button>
+              </div>
+
+              {msg && <div className={`mt-2 text-sm ${msg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{msg.text}</div>}
+
+            </form>
+
+            <aside className="p-4 bg-white dark:bg-black rounded border border-gray-100 dark:border-gray-800 order-1 md:order-2">
+              <h3 className="font-semibold mb-2">Order summary</h3>
               <div className="space-y-2">
                 {cart.map(item => (
                   <div key={item.cartItemId} className="flex justify-between text-sm">
